@@ -1461,6 +1461,7 @@ _fbAuth.onAuthStateChanged(async function(user) {
 
 
 
+
 const DEPT_OWNERS = {
   '회계':     '정보라',
   '무역1':    '카므란',
@@ -1742,18 +1743,9 @@ const DEPTS = {
       {no:4,item:'OEM 발주 증감율',target:.10,actual:0,prev:0,trend:'',comment:'',isP:true,cat:'result'},
       {no:5,item:'생산 품질 합격율',target:.98,actual:0,prev:0,trend:'',comment:'',isP:true,cat:'result'},
     ],
-    monthly:[
-    ],
-    weekly:[
-    ],
-    issues:[
-    ],
-  },
-
-  /* ─────────────────────────────
-     MD
-  ───────────────────────────── */
-  '생산기획': {
+    monthly:[],
+    weekly:[],
+    issues:[],
     checklist: [
       { id:'leadtime',  label:'오늘 리드타임 관리 완료',   kpi:'신제품 출시 리드타임' },
       { id:'quality',   label:'생산 품질 확인 완료',       kpi:'생산 품질 합격율' },
@@ -1768,6 +1760,11 @@ const DEPTS = {
       { id:'qualityTotal', label:'전체 검사 건수',         unit:'건', kpi:'생산 품질 합격율',      type:'total' },
     ],
   },
+
+  /* ─────────────────────────────
+     MD
+  ───────────────────────────── */
+
 
   'MD': {
     icon:'🛒', color:'#66bb6a', group:'MD',
@@ -5324,6 +5321,7 @@ if (document.readyState === 'loading') {
 } else {
   setTimeout(doInit, 50);
 }
+
 
 
 
