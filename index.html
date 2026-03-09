@@ -858,7 +858,7 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
     <div class="mbadge" id="monthBadge">2025.03</div>
     <button class="btn btn-csv" onclick="showCsvModal()" style="padding:4px 8px;font-size:10px">⬇ CSV</button>
     <div id="userBar" style="display:flex;align-items:center;gap:6px"><span id="roleBadge" style="display:none"></span>
-      <button id="loginGoogleBtn" onclick="window._googleSignIn && window._googleSignIn()"
+      <button id="loginGoogleBtn" onclick="window._googleSignIn && window._googleSignIn().catch(function(){})"
         style="display:flex;align-items:center;gap:6px;background:#fff;color:#333;border:1px solid #ddd;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
         <svg width="14" height="14" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
         Google 로그인</button>
@@ -1322,7 +1322,9 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 <div class="toast" id="toast"></div>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"
+><\/script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyB4RjMGO5zfNuwwk8SxnjYjwjqwpUIVOTA",
@@ -1351,13 +1353,15 @@ window._firestore   = {
 window._currentUser = null;
 
 window._googleSignIn = function() {
+  console.log('[AUTH] login button clicked');
   return _fbAuth.signInWithPopup(_fbProvider)
-    .then(function(r){ return r.user; })
-    .catch(function(e){ console.error('Google 로그인 실패:', e); throw e; });
+    .then(function(r){ console.log('[AUTH] login success'); return r.user; })
+    .catch(function(e){ console.error('[AUTH] login failed:', e); if(window.showToast) window.showToast('로그인 실패: '+(e&&e.message?e.message:e)); throw e; });
 };
 window._signOut = function() { return _fbAuth.signOut(); };
 
 _fbAuth.onAuthStateChanged(function(user) {
+  try {
   window._currentUser = user;
   setTimeout(function() { if (window.applyRoleUI) window.applyRoleUI(); }, 250);
 
@@ -1383,7 +1387,7 @@ _fbAuth.onAuthStateChanged(function(user) {
     setTimeout(function() { if (window.showToast) window.showToast('✅ ' + (user.displayName || user.email) + ' 로그인됨'); }, 400);
   } else {
     if (bar) {
-      bar.innerHTML = '<button onclick="window._googleSignIn()" style="display:flex;align-items:center;gap:6px;background:#fff;color:#333;border:1px solid #ddd;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">'
+      bar.innerHTML = '<button onclick="window._googleSignIn().catch(function(){})" style="display:flex;align-items:center;gap:6px;background:#fff;color:#333;border:1px solid #ddd;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">'
         + '<svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>'
         + 'Google로 로그인</button>';
     }
@@ -1393,6 +1397,11 @@ _fbAuth.onAuthStateChanged(function(user) {
 });
 </script>
 <script>
+
+
+
+
+
 
 
 
@@ -1594,6 +1603,8 @@ const DEPTS = {
     ],
     issues:[
     ],
+    checklist: [],
+    metrics:   [],
   },
 
 
@@ -1613,6 +1624,8 @@ const DEPTS = {
     ],
     issues:[
     ],
+    checklist: [],
+    metrics:   [],
   },
 
   '무역2': {
@@ -1631,6 +1644,8 @@ const DEPTS = {
     ],
     issues:[
     ],
+    checklist: [],
+    metrics:   [],
   },
 
   /* ─────────────────────────────
@@ -1656,6 +1671,8 @@ const DEPTS = {
     ],
     issues:[
     ],
+    checklist: [],
+    metrics:   [],
   },
 
   /* ─────────────────────────────
@@ -1709,6 +1726,8 @@ const DEPTS = {
     ],
     issues:[
     ],
+    checklist: [],
+    metrics:   [],
   },
 
   /* ─────────────────────────────
@@ -1729,6 +1748,8 @@ const DEPTS = {
     ],
     issues:[
     ],
+    checklist: [],
+    metrics:   [],
   },
 
   /* ─────────────────────────────
@@ -1750,6 +1771,8 @@ const DEPTS = {
     ],
     issues:[
     ],
+    checklist: [],
+    metrics:   [],
   },
 
   /* ─────────────────────────────
@@ -1817,6 +1840,34 @@ function loadState() {
     return s ? JSON.parse(s) : { depts: {}, weeklyActions: [...WEEKLY_ACTIONS], kpiOverrides: {}, lastSync: null };
   } catch { return { depts: {}, weeklyActions: [...WEEKLY_ACTIONS], kpiOverrides: {}, lastSync: null }; }
 }
+// ── 부서 데이터 구조 정규화 (5-1 구조 안정화) ─────────────────
+function normalizeDeptData(d) {
+  if (!d) return {owner:'',monthly:[],weekly:[],issues:[],checklist:[],metrics:[]};
+  return {
+    owner:     typeof d.owner==='string' ? d.owner : '',
+    monthly:   Array.isArray(d.monthly)   ? d.monthly   : [],
+    weekly:    Array.isArray(d.weekly)    ? d.weekly    : [],
+    issues:    Array.isArray(d.issues)    ? d.issues    : [],
+    checklist: Array.isArray(d.checklist) ? d.checklist : [],
+    metrics:   Array.isArray(d.metrics)   ? d.metrics   : [],
+  };
+}
+function normalizeAllDepts() {
+  if (!STATE.depts) STATE.depts = {};
+  Object.keys(DEPTS).forEach(function(name) {
+    if (!STATE.depts[name]) STATE.depts[name] = {};
+    var d = STATE.depts[name];
+    if (!Array.isArray(d.monthly))   d.monthly   = [];
+    if (!Array.isArray(d.weekly))    d.weekly    = [];
+    if (!Array.isArray(d.issues))    d.issues    = [];
+    if (!Array.isArray(d.checklist)) d.checklist = [];
+    if (!Array.isArray(d.metrics))   d.metrics   = [];
+    console.log('[INIT] dept normalized:', name);
+  });
+  // 5-7: 보정 후 즉시 저장
+  try { saveState(); } catch(e) { console.warn('[INIT] saveState failed:', e); }
+}
+
 function saveState() {
   try { localStorage.setItem(DB_KEY, JSON.stringify(STATE)); } catch(e) { console.error('LocalStorage save failed:', e); }
 }
@@ -1878,7 +1929,7 @@ async function syncToFirebase(uid) {
 // 사용자별 동기화 경로 설정
 window.setupUserSync = function(uid) {
   setupRealtimeSync(uid);
-  syncToFirebase(uid);
+  try { syncToFirebase(uid); } catch(e) { console.error('[SYNC] error:', e); }
 };
 
 function setupRealtimeSync(uid) {
@@ -4419,6 +4470,15 @@ function renderKpiMaster() {
   }
 }
 
+
+// ── 부서 버튼 독립 렌더 (렌더 오류와 무관하게 항상 표시) ────────
+function renderDeptButtons(deptName) {
+  return '<div class="dept-btn-row" style="display:flex;gap:8px;margin-top:12px;padding:12px;background:#f8fafc;border-radius:8px;border-top:1px solid var(--bdr)">'
+    + '<button class="btn btn-p" onclick="saveDeptInput(\'' + deptName + '\')" style="flex:1;padding:10px;font-size:13px;font-weight:700">💾 KPI 저장</button>'
+    + '<button class="btn" onclick="if(typeof manualSaveDaily===\'function\')manualSaveDaily(\'' + deptName + '\')" style="background:#e8f5e9;color:var(--green);border:1px solid #a5d6a7;padding:10px 14px">📅 일일저장</button>'
+    + '<button class="btn" onclick="if(typeof linkDailyToWeekly===\'function\')linkDailyToWeekly(\'' + deptName + '\')" style="background:#f3e5f5;color:#8e24aa;border:1px solid #ce93d8;padding:10px 14px">🔗 주간연동</button>'
+    + '</div>';
+}
 function renderDeptPage(deptName) {
   const containerId = 'deptContent-' + deptName;
   const container = document.getElementById(containerId);
@@ -4443,6 +4503,8 @@ function renderDeptPage(deptName) {
     return `${k.item}: ${(r*100).toFixed(0)}점 × ${Math.round(w)}%`;
   }).join(' / ');
 
+  console.log('[RENDER] dept page:', deptName);
+  try {
   container.innerHTML = `
     <div class="score-card" style="margin-bottom:12px">
       <div>
@@ -4484,12 +4546,16 @@ function renderDeptPage(deptName) {
         <div class="stab-content" id="${safeId}-plan">${monthlyPlanHTML(d.monthly, deptName)}</div>
         <div class="stab-content" id="${safeId}-weekly">${weeklyActHTML(weeklyData, deptName)}</div>
         <div class="stab-content" id="${safeId}-issues">${issueHTML(d.issues, deptName)}</div>
-        <div class="stab-content" id="${safeId}-input">${deptInputHTML(deptName, d)}</div>
+        <div class="stab-content" id="${safeId}-input">${(function(){ try { return deptInputHTML(deptName, d); } catch(e){ console.error('[RENDER] deptInputHTML error', deptName, e); return '<div class="card" style="border-left:4px solid #ef5350;padding:12px">⚠️ KPI 입력 섹션 오류<br><small>'+e.message+'</small><br><button class="btn btn-p" onclick="saveDeptInput(\''+ deptName + '\')" style="margin-top:8px">💾 KPI 저장 시도</button></div>'; }})()}</div>
 
-        ${DAILY_TASKS[deptName] ? '<div class="stab-content" id="' + safeId + '-daily">' + dailyPageHTML(deptName) + '</div>' : ''}
+        ${DAILY_TASKS[deptName] ? '<div class="stab-content" id="' + safeId + '-daily">' + (function(){ try { return dailyPageHTML(deptName); } catch(e){ console.error('[RENDER] dailyPageHTML error', deptName, e); return '<div class="card" style="border-left:4px solid #ef5350;padding:12px">⚠️ 일일업무 섹션 오류<br><small>'+e.message+'</small></div>'; }})() + '</div>' : ''}
         ${deptName==='회계' && isAdmin() ? '<div class="stab-content" id="' + safeId + '-mgmt">' + mgmtInputHTML() + '</div>' : (deptName==='회계' ? '<div class="stab-content" id="' + safeId + '-mgmt"><div style="text-align:center;padding:40px 20px"><div style="font-size:32px;margin-bottom:12px">🔒</div><div style="font-size:14px;font-weight:700;color:var(--txt2)">관리자 전용 메뉴</div><div style="font-size:12px;color:var(--txt3);margin-top:6px">관리자 계정으로 로그인하면 열람할 수 있습니다</div></div></div>' : '')}
       </div>
     </div>`;
+  } catch(e) {
+    console.error('[RENDER] error', deptName, e);
+    container.innerHTML = '<div style="padding:16px;border-left:4px solid #ef5350;background:#fff3f3;border-radius:8px">' + '<b style="color:#ef5350">⚠️ 렌더 오류 (' + deptName + ')</b><br>' + '<small>' + (e&&e.message?e.message:e) + '</small><br><br>' + '<button class="btn btn-p" onclick="saveDeptInput(\'' + deptName + '\')" style="margin-right:8px">💾 KPI 저장</button>' + '<button class="btn" onclick="renderDeptPage(\'' + deptName + '\')" >🔄 다시 시도</button></div>';
+  }
 }
 
 
@@ -5168,6 +5234,9 @@ function doInit() {
   });
 
   // ── 앱 초기화 ──
+  console.log('[INIT] app start');
+  normalizeAllDepts();
+  console.log('[INIT] state loaded');
   try { renderAll(); } catch(e) { console.error('renderAll:', e); }
   try { setupRealtimeSync(); } catch(e) { console.error('sync:', e); }
   try { initPwaPrompt(); } catch(e) {}
@@ -5182,6 +5251,11 @@ if (document.readyState === 'loading') {
 } else {
   setTimeout(doInit, 50);
 }
+
+
+
+
+
 
 
 
