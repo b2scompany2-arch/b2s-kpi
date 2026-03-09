@@ -4098,6 +4098,7 @@ _fbAuth.onAuthStateChanged(async function(user) {
 
 
 
+
 const DEPT_OWNERS = {
   '회계':     '정보라',
   '무역1':    '카므란',
@@ -5632,27 +5633,58 @@ const DAILY_TASKS = {
       { id:'review',   label:'수정 요청 당일 처리',     kpi:'평균 수정 횟수' },
     ],
     metrics: [
-      { id:'completedWorks', label:'오늘 완료 작업 건수', unit:'건', kpi:'작업 기한 준수율', type:'count' },
-      { id:'totalWorks',     label:'오늘 전체 작업 건수', unit:'건', kpi:'작업 기한 준수율', type:'total' },
-      { id:'revisions',      label:'수정 발생 건수',      unit:'건', kpi:'평균 수정 횟수',   type:'accumulate' },
-      { id:'errors',         label:'패키지 오류 발생',    unit:'건', kpi:'패키지 오류 건수', type:'accumulate' },
+      { id:'completedWorks', label:'오늘 완료 작업 건수', unit:'건', kpi:'작업 기한 준수율',  type:'count' },
+      { id:'totalWorks',     label:'오늘 전체 작업 건수', unit:'건', kpi:'작업 기한 준수율',  type:'total' },
+      { id:'revisions',      label:'수정 발생 건수',      unit:'건', kpi:'평균 수정 횟수',    type:'accumulate' },
+      { id:'errors',         label:'패키지 오류 발생',    unit:'건', kpi:'패키지 오류 건수',  type:'accumulate' },
     ],
     memo: true,
   },
   '원료영업': {
     checklist: [
-      { id:'visit',    label:'오늘 거래처 방문 완료',      kpi:'월 거래처 방문 건수' },
-      { id:'report',   label:'방문 보고서 작성 완료',      kpi:'방문보고서 작성율' },
-      { id:'response', label:'업체 문의 당일 응답 완료',   kpi:'업체 문의 응답율' },
-      { id:'followup', label:'후속 조치 실행 완료',        kpi:'후속조치 실행율' },
-      { id:'saleslog', label:'일일 영업활동 기록 완료',    kpi:'월 거래처 방문 건수' },
+      { id:'visit',    label:'오늘 거래처 방문 완료',    kpi:'월 거래처 방문 건수' },
+      { id:'report',   label:'방문 보고서 작성 완료',    kpi:'방문보고서 작성율' },
+      { id:'response', label:'업체 문의 당일 응답 완료', kpi:'업체 문의 응답율' },
+      { id:'followup', label:'후속 조치 실행 완료',      kpi:'후속조치 실행율' },
+      { id:'saleslog', label:'일일 영업활동 기록 완료',  kpi:'월 거래처 방문 건수' },
     ],
     metrics: [
-      { id:'visits',      label:'오늘 방문 건수',           unit:'건', kpi:'월 거래처 방문 건수', type:'accumulate' },
-      { id:'salesActs',   label:'일일 영업활동 건수',        unit:'건', kpi:'월 거래처 방문 건수', type:'accumulate', desc:'전화/이메일/방문/미팅 등 모든 영업활동' },
-      { id:'inquiries',   label:'오늘 문의 수신',            unit:'건', kpi:'업체 문의 응답율',    type:'total' },
-      { id:'responded',   label:'당일 응답 완료',            unit:'건', kpi:'업체 문의 응답율',    type:'count' },
-      { id:'samples',     label:'샘플 요청 전환',            unit:'건', kpi:'방문→샘플 전환율',   type:'accumulate' },
+      { id:'visits',    label:'오늘 방문 건수',  unit:'건', kpi:'월 거래처 방문 건수', type:'accumulate' },
+      { id:'salesActs', label:'영업활동 건수',   unit:'건', kpi:'월 거래처 방문 건수', type:'accumulate', desc:'전화/이메일/방문/미팅' },
+      { id:'inquiries', label:'오늘 문의 수신',  unit:'건', kpi:'업체 문의 응답율',    type:'total' },
+      { id:'responded', label:'당일 응답 완료',  unit:'건', kpi:'업체 문의 응답율',    type:'count' },
+      { id:'samples',   label:'샘플 요청 전환',  unit:'건', kpi:'방문→샘플 전환율',   type:'accumulate' },
+    ],
+    memo: true,
+  },
+  'CS발주': {
+    checklist: [
+      { id:'checkOrder',  label:'당일 발주 오류 없이 처리 완료', kpi:'발주 처리 정확도' },
+      { id:'csResponse',  label:'CS 접수 건 당일 처리 완료',     kpi:'CS 처리시간' },
+      { id:'checkShip',   label:'출고 내역 이중 확인 완료',      kpi:'출고 오류율' },
+      { id:'returnCheck', label:'반품 접수 건 처리 완료',        kpi:'반품율' },
+    ],
+    metrics: [
+      { id:'orderCount',  label:'오늘 발주 처리 건수',  unit:'건', kpi:'발주 처리 정확도', type:'count' },
+      { id:'orderErr',    label:'발주 오류 발생 건수',  unit:'건', kpi:'출고 오류율',      type:'accumulate' },
+      { id:'csReceived',  label:'CS 접수 건수',         unit:'건', kpi:'CS 발생율',        type:'total' },
+      { id:'csDone',      label:'CS 처리 완료 건수',    unit:'건', kpi:'CS 처리시간',      type:'count' },
+      { id:'returnCount', label:'반품 접수 건수',        unit:'건', kpi:'반품율',           type:'accumulate' },
+    ],
+    memo: true,
+  },
+  '연구원': {
+    checklist: [
+      { id:'labNote',   label:'오늘 연구일지 작성 완료',  kpi:'일일 연구일지 작성율' },
+      { id:'schedule',  label:'개발 일정 준수 확인',      kpi:'개발 일정 준수율' },
+      { id:'vendorRes', label:'업체 문의 당일 응답 완료', kpi:'업체 응답 평균 소요일' },
+      { id:'proposal',  label:'신규 아이디어/제안 검토',  kpi:'신규 아이템 제안 건수' },
+    ],
+    metrics: [
+      { id:'labNoteCount', label:'연구일지 작성 여부',     unit:'건', kpi:'일일 연구일지 작성율',  type:'count' },
+      { id:'vendorDelay',  label:'업체 응답 소요일',       unit:'일', kpi:'업체 응답 평균 소요일', type:'total' },
+      { id:'newIdeas',     label:'오늘 신규 제안 건수',    unit:'건', kpi:'신규 아이템 제안 건수', type:'accumulate' },
+      { id:'taskDone',     label:'오늘 완료 개발 과제 수', unit:'건', kpi:'개발 일정 준수율',      type:'count' },
     ],
     memo: true,
   },
@@ -7078,6 +7110,7 @@ if (document.readyState === 'loading') {
 } else {
   setTimeout(doInit, 50);
 }
+
 
 
 
