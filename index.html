@@ -1,0 +1,1947 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="B2S KPI">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>B2S KPI 실행관리시스템</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+// ══════════════════════════════════════════
+//  FIREBASE CONFIG
+// ══════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyB4RjMGO5zfNuwwk8SxnjYjwjqwpUIVOTA",
+  authDomain: "b2s-kpi-7c8c0.firebaseapp.com",
+  projectId: "b2s-kpi-7c8c0",
+  storageBucket: "b2s-kpi-7c8c0.firebasestorage.app",
+  messagingSenderId: "843804836870",
+  appId: "1:843804836870:web:49d50be534c21eb97baf87"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+// 전역 노출
+window._db        = db;
+window._auth      = auth;
+window._syncEnabled = true;
+window._firestore = { doc, setDoc, getDoc, onSnapshot, collection, getDocs };
+window._currentUser = null;
+
+// Google 로그인
+window._googleSignIn = async () => {
+  try {
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
+  } catch(e) {
+    console.error('Google 로그인 실패:', e);
+    throw e;
+  }
+};
+
+// 로그아웃
+window._signOut = async () => {
+  await signOut(auth);
+};
+
+// 인증 상태 감지 → 사용자별 Firestore 동기화
+onAuthStateChanged(auth, async (user) => {
+  window._currentUser = user;
+  const bar   = document.getElementById('userBar');
+  const loginBtn  = document.getElementById('loginGoogleBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  if (user) {
+    // 로그인됨 → UI 업데이트
+    if (bar) {
+      bar.innerHTML = `<img src="${user.photoURL||''}" style="width:24px;height:24px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'">
+        <span style="font-size:11px;color:var(--txt2)">${user.displayName||user.email}</span>
+        <button onclick="window._signOut()" style="background:rgba(239,83,80,.15);color:var(--red);border:1px solid var(--red);border-radius:6px;padding:2px 8px;font-size:10px;cursor:pointer;font-family:inherit">로그아웃</button>`;
+    }
+    if (loginBtn)  loginBtn.style.display  = 'none';
+    if (logoutBtn) logoutBtn.style.display = 'block';
+
+    // 사용자별 Firestore 문서 경로: users/{uid}/kpi_state
+    document.getElementById('syncStatusText').textContent = `${user.displayName} · 동기화 중`;
+
+    if (window.setupUserSync) window.setupUserSync(user.uid);
+  } else {
+    // 로그아웃됨
+    if (bar) bar.innerHTML = `<button id="loginGoogleBtn" onclick="window._googleSignIn()" 
+      style="display:flex;align-items:center;gap:6px;background:#fff;color:#333;border:1px solid #ddd;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+      <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Google로 로그인</button>`;
+    if (logoutBtn) logoutBtn.style.display = 'none';
+    document.getElementById('syncStatusText').textContent = '로그인하면 동기화됩니다';
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => { if(window.appInit) window.appInit(); }, 150);
+});
+</script>
+<style>
+:root {
+  --bg-0:#060810;--bg-1:#0d1220;--bg-2:#131a2e;--bg-3:#1a2440;--bg-4:#222e50;
+  --blue:#4fc3f7;--green:#66bb6a;--amber:#ffa726;--red:#ef5350;--purple:#ce93d8;--cyan:#4dd0e1;--orange:#ff8a65;
+  --txt1:#e8edf5;--txt2:#8da0b8;--txt3:#4a5d78;
+  --bdr:#1e2d45;--bdr2:#263550;--r:12px;--r2:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg-0);color:var(--txt1);overflow:hidden}
+.app{display:flex;flex-direction:column;height:100dvh}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg-1);border-bottom:1px solid var(--bdr);flex-shrink:0;z-index:100}
+.logo{display:flex;align-items:center;gap:8px}
+.logo-mark{width:34px;height:34px;background:linear-gradient(135deg,#1e3a8a,#0ea5e9);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#fff}
+.logo-t{font-size:14px;font-weight:700;letter-spacing:-.3px}
+.logo-s{font-size:10px;color:var(--txt3)}
+.hdr-r{display:flex;gap:6px;align-items:center}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--txt3)}
+.sync-dot.online{background:var(--green);box-shadow:0 0 6px var(--green)}
+.sync-dot.syncing{background:var(--amber);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.mbadge{background:var(--bg-3);border:1px solid var(--bdr2);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--blue);font-family:'JetBrains Mono',monospace}
+.ibtn{display:none;align-items:center;gap:5px;background:linear-gradient(135deg,#1e3a8a,#0ea5e9);border:none;border-radius:7px;padding:5px 10px;font-size:11px;color:#fff;cursor:pointer;font-weight:700}
+.ibtn.show{display:flex}
+
+/* TOP NAV */
+.topnav{display:flex;background:var(--bg-1);border-bottom:1px solid var(--bdr);overflow-x:auto;flex-shrink:0;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.topnav::-webkit-scrollbar{display:none}
+.ntab{flex-shrink:0;padding:0 14px;height:42px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--txt3);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.ntab:hover{color:var(--txt2);background:var(--bg-2)}
+.ntab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.ntab-sep{flex-shrink:0;display:flex;align-items:center;padding:0 6px 0 10px;font-size:9px;font-weight:800;color:var(--txt3);letter-spacing:.6px;text-transform:uppercase;border-left:1px solid var(--bdr);margin-left:4px;white-space:nowrap;pointer-events:none}
+.ndot{width:5px;height:5px;border-radius:50%;background:currentColor}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:var(--bg-4) transparent}
+.content::-webkit-scrollbar{width:3px}
+.content::-webkit-scrollbar-thumb{background:var(--bg-4);border-radius:2px}
+.page{display:none}.page.active{display:block}
+
+/* CARDS */
+.card{background:var(--bg-2);border:1px solid var(--bdr);border-radius:var(--r);padding:14px;margin-bottom:14px}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card-t{font-size:12px;font-weight:700;color:var(--txt2);letter-spacing:.5px;text-transform:uppercase}
+.sec-lbl{font-size:12px;font-weight:700;color:var(--txt2);letter-spacing:.5px;margin-bottom:10px}
+
+/* ALERT SYSTEM */
+.alert-bar{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none}
+.alert-bar::-webkit-scrollbar{display:none}
+.al{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--r2);flex-shrink:0;border-left:3px solid transparent}
+.al.danger{background:rgba(239,83,80,.12);border-left-color:var(--red)}
+.al.warn{background:rgba(255,167,38,.12);border-left-color:var(--amber)}
+.al.ok{background:rgba(102,187,106,.12);border-left-color:var(--green)}
+.al-ico{font-size:14px}
+.al-t{font-size:11px;font-weight:700}
+.al-d{font-size:10px;color:var(--txt3);margin-top:2px}
+
+/* KPI CARDS GRID */
+.kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+.kcard{background:var(--bg-3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:12px;position:relative;overflow:hidden}
+.kcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kc,var(--blue))}
+.klbl{font-size:10px;color:var(--txt3);margin-bottom:4px;font-weight:600}
+.kval{font-size:18px;font-weight:900;font-family:'JetBrains Mono',monospace;line-height:1}
+.ksub{font-size:10px;color:var(--txt3);margin-top:2px}
+.krate{font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;margin-top:6px;display:inline-block}
+.rg{background:rgba(102,187,106,.2);color:var(--green)}
+.rw{background:rgba(255,167,38,.2);color:var(--amber)}
+.rb{background:rgba(239,83,80,.2);color:var(--red)}
+
+/* SCORE CARD */
+.score-card{background:linear-gradient(135deg,var(--bg-3),var(--bg-4));border:1px solid var(--bdr2);border-radius:var(--r);padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:16px}
+.score-big{font-size:48px;font-weight:900;font-family:'JetBrains Mono',monospace;line-height:1}
+.score-info{flex:1}
+.score-lbl{font-size:11px;color:var(--txt3);margin-bottom:4px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.score-sub{font-size:11px;color:var(--txt2);margin-top:6px;line-height:1.6}
+
+/* GAUGE GRID */
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px}
+.gitem{display:flex;flex-direction:column;align-items:center;padding:10px 6px;background:var(--bg-3);border:1px solid var(--bdr);border-radius:var(--r2);transition:all .2s}
+.gitem:hover{background:var(--bg-4);transform:translateY(-2px)}
+.gcircle{position:relative;display:flex;align-items:center;justify-content:center}
+.gpct{position:absolute;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.gnm{font-size:10px;font-weight:600;margin-top:4px;text-align:center;color:var(--txt2)}
+
+/* KPI TABLE */
+.kt{width:100%;border-collapse:collapse;font-size:11px}
+.kt th{padding:6px 8px;text-align:left;color:var(--txt3);font-weight:600;border-bottom:1px solid var(--bdr);white-space:nowrap;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+.kt td{padding:6px 8px;border-bottom:1px solid var(--bdr);vertical-align:middle}
+.kt tr:hover td{background:var(--bg-3)}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11px}
+.pw{display:flex;align-items:center;gap:6px}
+.pb{flex:1;height:4px;background:var(--bg-4);border-radius:2px;min-width:40px}
+.pf{height:100%;border-radius:2px;transition:width .5s}
+.pt{font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;min-width:30px}
+.trend{font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px}
+.trend.up{background:rgba(102,187,106,.2);color:var(--green)}
+.trend.down{background:rgba(239,83,80,.2);color:var(--red)}
+.trend.same{background:var(--bg-4);color:var(--txt3)}
+.cat{font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;margin-right:3px;vertical-align:middle}
+.cat-result{background:rgba(79,195,247,.15);color:var(--blue)}
+.cat-activity{background:rgba(102,187,106,.15);color:var(--green)}
+.cat-convert{background:rgba(206,147,216,.15);color:var(--purple)}
+.weight-badge{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(255,167,38,.15);color:var(--amber);margin-left:3px}
+
+/* DEPT ACCORDION / CARD */
+.dacc{background:var(--bg-2);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:12px;overflow:hidden}
+.dacc-hdr{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg-3)}
+.dico{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.dnm{font-size:14px;font-weight:700;flex:1}
+.dscr{font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.dacc-body{padding:14px}
+.stabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
+.stab{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;color:var(--txt3);background:var(--bg-4);border:none;transition:all .2s;white-space:nowrap}
+.stab.active{background:var(--blue);color:#000}
+.stab-content{display:none}.stab-content.active{display:block}
+
+/* PLAN LIST */
+.plist{display:flex;flex-direction:column;gap:8px}
+.pitem{background:var(--bg-3);border-radius:var(--r2);padding:10px 12px;border-left:3px solid var(--bdr2)}
+.pitem-hdr{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap}
+.pkpi{font-size:10px;font-weight:700;color:var(--blue)}
+.pst{font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px}
+.pst-done{background:rgba(102,187,106,.2);color:var(--green)}
+.pst-ing{background:rgba(255,167,38,.2);color:var(--amber)}
+.pst-plan{background:var(--bg-4);color:var(--txt3)}
+.ptask{font-size:12px;font-weight:600;margin-bottom:2px}
+.pact{font-size:11px;color:var(--txt2)}
+.pdue{font-size:10px;color:var(--txt3);margin-top:4px}
+
+/* ACTIONS */
+.alist{display:flex;flex-direction:column;gap:6px}
+.aitem{display:flex;gap:10px;padding:10px 12px;background:var(--bg-3);border-radius:var(--r2);cursor:pointer;border-left:3px solid var(--bdr2);transition:all .15s}
+.aitem:hover{background:var(--bg-4)}
+.aitem.done{opacity:.5;border-left-color:var(--green)}
+.achk{width:20px;height:20px;border-radius:50%;border:2px solid var(--bdr2);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;color:var(--green)}
+.aitem.done .achk{background:var(--green);border-color:var(--green);color:#000}
+.abody{flex:1;min-width:0}
+.akpi{font-size:10px;color:var(--blue);font-weight:700;margin-bottom:2px}
+.atxt{font-size:12px;font-weight:600;margin-bottom:4px}
+.ares{font-size:11px;color:var(--txt2)}
+.aiss{font-size:11px;color:var(--amber);margin-top:2px}
+.anxt{font-size:11px;color:var(--cyan);margin-top:2px}
+.aown{font-size:10px;color:var(--txt3);margin-top:4px}
+
+/* ISSUES */
+.ilist{display:flex;flex-direction:column;gap:8px}
+.iitem{background:var(--bg-3);border-radius:var(--r2);padding:10px 12px;border-left:3px solid var(--amber)}
+.idate{font-size:10px;color:var(--txt3);margin-bottom:4px;font-family:'JetBrains Mono',monospace}
+.iiss{font-size:12px;font-weight:700;color:var(--amber);margin-bottom:6px}
+.irow{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+@media(min-width:600px){.irow{grid-template-columns:1fr 1fr 1fr 1fr}}
+.icell{background:var(--bg-4);border-radius:6px;padding:6px 8px;font-size:10px;line-height:1.5;color:var(--txt2)}
+.icell-lbl{font-weight:700;color:var(--txt3);margin-bottom:2px;font-size:9px;text-transform:uppercase;letter-spacing:.3px}
+
+/* KPI MASTER TABLE */
+.master-table{width:100%;border-collapse:collapse;font-size:11px}
+.master-table th{padding:7px 8px;text-align:left;color:var(--txt3);font-weight:600;border-bottom:2px solid var(--bdr2);white-space:nowrap;font-size:10px;background:var(--bg-3);position:sticky;top:0;z-index:2}
+.master-table td{padding:7px 8px;border-bottom:1px solid var(--bdr);vertical-align:middle;line-height:1.4}
+.master-table tr:hover td{background:var(--bg-3)}
+.master-wrap{overflow-x:auto;border-radius:var(--r2);border:1px solid var(--bdr)}
+
+/* TREND BADGES */
+.tbadge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px}
+.tbadge.up{background:rgba(102,187,106,.15);color:var(--green)}
+.tbadge.down{background:rgba(239,83,80,.15);color:var(--red)}
+.tbadge.flat{background:var(--bg-4);color:var(--txt3)}
+
+/* PERIOD TABS */
+.period-tabs{display:flex;gap:4px;margin-bottom:12px}
+.ptab{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;color:var(--txt3);background:var(--bg-4);border:none}
+.ptab.active{background:var(--purple);color:#000}
+
+/* FORMS */
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.fl{font-size:11px;font-weight:600;color:var(--txt2)}
+.fc{background:var(--bg-3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:8px 10px;color:var(--txt1);font-size:12px;font-family:inherit;outline:none;transition:border-color .2s;width:100%}
+.fc:focus{border-color:var(--blue)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{padding:8px 14px;border-radius:var(--r2);border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-p{background:linear-gradient(135deg,var(--blue),#0ea5e9);color:#000}
+.btn-g{background:rgba(102,187,106,.2);color:var(--green);border:1px solid var(--green)}
+.btn-r{background:rgba(239,83,80,.15);color:var(--red);border:1px solid var(--red)}
+.btn-csv{background:rgba(255,167,38,.15);color:var(--amber);border:1px solid var(--amber)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+
+/* STATUS INDICATORS */
+.status-ok{color:var(--green);font-weight:700}
+.status-warn{color:var(--amber);font-weight:700}
+.status-danger{color:var(--red);font-weight:700}
+
+/* PERIOD BADGE */
+.period-badge{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700}
+.pb-monthly{background:rgba(79,195,247,.15);color:var(--blue)}
+.pb-quarterly{background:rgba(206,147,216,.15);color:var(--purple)}
+.pb-yearly{background:rgba(255,167,38,.15);color:var(--amber)}
+
+/* BOTTOM NAV */
+.bnav{display:none;background:var(--bg-1);border-top:1px solid var(--bdr);padding-bottom:env(safe-area-inset-bottom,0)}
+@media(max-width:768px){.bnav{display:block}.topnav{display:none}}
+.bnav-i{display:flex;justify-content:space-around}
+.bni{display:flex;flex-direction:column;align-items:center;padding:8px 6px;cursor:pointer;flex:1;min-width:0;transition:all .15s}
+.bni-ico{font-size:18px;margin-bottom:2px}
+.bni-lbl{font-size:9px;color:var(--txt3);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56px;text-align:center}
+.bni.active .bni-lbl{color:var(--blue)}
+.bni.active .bni-ico{filter:drop-shadow(0 0 4px var(--blue))}
+
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg-4);border:1px solid var(--bdr2);border-radius:20px;padding:8px 18px;font-size:12px;font-weight:600;opacity:0;transition:all .3s;pointer-events:none;z-index:9999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* SYNC STATUS BAR */
+.sync-bar{display:none;background:rgba(255,167,38,.1);border-bottom:1px solid rgba(255,167,38,.3);padding:4px 16px;font-size:10px;color:var(--amber);text-align:center}
+.sync-bar.show{display:block}
+.sync-bar.synced{background:rgba(102,187,106,.1);border-bottom-color:rgba(102,187,106,.3);color:var(--green)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.show{display:flex}
+.modal{background:var(--bg-2);border:1px solid var(--bdr2);border-radius:var(--r);padding:20px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modal-t{font-size:14px;font-weight:700}
+.modal-close{background:var(--bg-4);border:none;color:var(--txt2);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:14px}
+
+/* RESPONSIVE TABLE */
+@media(max-width:600px){
+  .kt{font-size:10px}
+  .kt th:nth-child(7),.kt td:nth-child(7){display:none}
+  .irow{grid-template-columns:1fr 1fr}
+}
+
+/* PWA 설치 팝업 */
+.pwa-overlay{position:fixed;inset:0;background:rgba(6,8,16,.95);z-index:9998;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.pwa-overlay.show{display:flex}
+.pwa-modal{background:var(--bg-2);border:1px solid var(--bdr2);border-radius:20px;padding:28px 24px;width:100%;max-width:360px;text-align:center;animation:pwaSlide .35s ease}
+@keyframes pwaSlide{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+.pwa-logo{display:flex;justify-content:center;margin-bottom:16px}
+.pwa-logo-mark{width:64px;height:64px;background:linear-gradient(135deg,#1e3a8a,#0ea5e9);border-radius:16px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:#fff;box-shadow:0 8px 24px rgba(14,165,233,.3)}
+.pwa-title{font-size:20px;font-weight:900;margin-bottom:6px}
+.pwa-sub{font-size:13px;color:var(--txt2);line-height:1.6;margin-bottom:20px}
+.pwa-features{display:flex;flex-direction:column;gap:8px;margin-bottom:24px;text-align:left}
+.pwa-feat{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-3);border-radius:8px;font-size:12px;color:var(--txt2)}
+.pwa-feat-ico{font-size:16px;width:24px;text-align:center}
+.pwa-btn-install{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#1e3a8a,#0ea5e9);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px;transition:all .2s}
+.pwa-btn-install:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(14,165,233,.4)}
+.pwa-btn-skip{width:100%;padding:10px;border-radius:12px;border:1px solid var(--bdr2);background:transparent;color:var(--txt3);font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s}
+.pwa-btn-skip:hover{color:var(--txt2);border-color:var(--txt3)}
+.pwa-ios-guide{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;text-align:left}
+.pwa-ios-step{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg-3);border-radius:8px;font-size:12px;color:var(--txt2);line-height:1.5}
+.pwa-ios-num{width:22px;height:22px;border-radius:50%;background:var(--blue);color:#000;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pwa-installed-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(102,187,106,.15);color:var(--green);border:1px solid rgba(102,187,106,.3);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700}
+
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SYNC STATUS BAR -->
+<div class="sync-bar" id="syncBar">🔄 동기화 중...</div>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="logo">
+    <div class="logo-mark">B2S</div>
+    <div>
+      <div class="logo-t">B2S KPI System</div>
+      <div class="logo-s" id="syncStatusText">오프라인 모드</div>
+    </div>
+  </div>
+  <div class="hdr-r">
+    <div class="sync-dot" id="syncDot" title="동기화 상태"></div>
+    <div class="mbadge" id="monthBadge">2025.03</div>
+    <button class="btn btn-csv" onclick="showCsvModal()" style="padding:4px 8px;font-size:10px">⬇ CSV</button>
+    <div id="userBar" style="display:flex;align-items:center;gap:6px">
+      <button id="loginGoogleBtn" onclick="window._googleSignIn && window._googleSignIn()"
+        style="display:flex;align-items:center;gap:6px;background:#fff;color:#333;border:1px solid #ddd;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+        <svg width="14" height="14" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Google 로그인</button>
+    </div>
+    <button class="ibtn" id="installBtn">📲 앱 설치</button>
+  </div>
+</header>
+
+<!-- TOP NAV -->
+<nav class="topnav" id="mainNav">
+  <div class="ntab active" data-page="dashboard"><div class="ndot" style="background:var(--blue)"></div>통합 대시보드</div>
+  <div class="ntab" data-page="company"><div class="ndot" style="background:var(--purple)"></div>전체 KPI</div>
+  <div class="ntab" data-page="kpimaster"><div class="ndot" style="background:var(--amber)"></div>📋 KPI Master</div>
+
+  <div class="ntab-sep">경영지원</div>
+  <div class="ntab" data-page="dept-경영지원"><div class="ndot" style="background:var(--txt2)"></div>⚙️ 경영지원</div>
+
+  <div class="ntab-sep">무역</div>
+  <div class="ntab" data-page="dept-무역1"><div class="ndot" style="background:var(--cyan)"></div>🌐 무역1 (카므란)</div>
+  <div class="ntab" data-page="dept-무역2"><div class="ndot" style="background:var(--cyan)"></div>🌐 무역2 (이리)</div>
+
+  <div class="ntab-sep">원료영업</div>
+  <div class="ntab" data-page="dept-원료영업"><div class="ndot" style="background:var(--purple)"></div>🤝 원료영업</div>
+
+  <div class="ntab-sep">생산·MD</div>
+  <div class="ntab" data-page="dept-생산기획"><div class="ndot" style="background:var(--orange)"></div>🏗️ 생산기획</div>
+  <div class="ntab" data-page="dept-MD"><div class="ndot" style="background:var(--green)"></div>🛒 MD</div>
+
+  <div class="ntab-sep">CS·디자인</div>
+  <div class="ntab" data-page="dept-CS발주"><div class="ndot" style="background:var(--green)"></div>📋 CS발주</div>
+  <div class="ntab" data-page="dept-디자인"><div class="ndot" style="background:var(--purple)"></div>🎨 디자인</div>
+
+  <div class="ntab-sep">연구원</div>
+  <div class="ntab" data-page="dept-연구원"><div class="ndot" style="background:var(--amber)"></div>🔬 연구원</div>
+
+  <div class="ntab-sep"></div>
+  <div class="ntab" data-page="weekly"><div class="ndot" style="background:var(--green)"></div>주간 점검</div>
+  <div class="ntab" data-page="input"><div class="ndot" style="background:var(--txt3)"></div>실적 입력</div>
+</nav>
+
+<!-- CONTENT -->
+<main class="content">
+
+<!-- ══ DASHBOARD ══ -->
+<div class="page active" id="page-dashboard">
+  <!-- Alert Bar -->
+  <div class="alert-bar" id="alertList"></div>
+
+  <!-- Company Score Card -->
+  <div class="score-card" id="scoreCard">
+    <div>
+      <div class="score-lbl">종합 KPI Score</div>
+      <div class="score-big" id="totalScore" style="color:var(--green)">—</div>
+    </div>
+    <div class="score-info">
+      <div id="scoreDetail" style="font-size:11px;color:var(--txt2);line-height:1.8"></div>
+      <div id="scoreStatus" style="font-size:12px;font-weight:700;margin-top:6px"></div>
+    </div>
+  </div>
+
+  <!-- Company KPI Cards -->
+  <div class="card">
+    <div class="card-hdr"><div class="card-t">⚡ 주요 경영지표</div><div style="font-size:10px;color:var(--txt3)" id="alertBadge"></div></div>
+    <div class="kgrid" id="companyKpiGrid"></div>
+  </div>
+
+  <!-- Dept Gauges -->
+  <div class="card">
+    <div class="card-hdr"><div class="card-t">🏢 부서별 KPI 달성률</div><div style="font-size:10px;color:var(--txt3)">클릭 → 상세보기</div></div>
+    <div class="ggrid" id="gaugeGrid"></div>
+  </div>
+
+  <!-- KPI→매출 연결 분석 -->
+  <div class="card">
+    <div class="card-hdr"><div class="card-t">🔗 KPI → 매출 연결 분석</div><div style="font-size:10px;color:var(--txt3)">업무 KPI가 매출에 연결되는 경로</div></div>
+    <div id="kpiSalesChain"></div>
+  </div>
+</div>
+
+<!-- ══ COMPANY KPI ══ -->
+<div class="page" id="page-company">
+  <div class="card"><div class="sec-lbl">■ 전체 KPI</div><div id="companyTableWrap"></div></div>
+  <div class="card"><div class="sec-lbl">📋 이번달 핵심 KPI</div><div id="monthlyTableWrap"></div></div>
+</div>
+
+<!-- ══ KPI MASTER ══ -->
+<div class="page" id="page-kpimaster">
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-t">📋 KPI 정의 테이블 (Master)</div>
+      <button class="btn btn-csv" onclick="downloadCSV('master')" style="font-size:10px;padding:4px 8px">⬇ CSV</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+      <select class="fc" id="masterFilterDept" style="width:auto;flex:1;min-width:100px" onchange="renderKpiMaster()">
+        <option value="">전체 부서</option>
+      </select>
+      <select class="fc" id="masterFilterType" style="width:auto;flex:1;min-width:100px" onchange="renderKpiMaster()">
+        <option value="">전체 유형</option>
+        <option value="result">Result</option>
+        <option value="activity">Activity</option>
+        <option value="convert">Convert</option>
+      </select>
+      <select class="fc" id="masterFilterPeriod" style="width:auto;flex:1;min-width:100px" onchange="renderKpiMaster()">
+        <option value="">전체 기간</option>
+        <option value="monthly">월간</option>
+        <option value="quarterly">분기</option>
+        <option value="yearly">연간</option>
+      </select>
+    </div>
+    <div class="master-wrap" id="kpiMasterTable"></div>
+  </div>
+</div>
+
+<!-- ══ 부서별 개별 페이지 ══ -->
+<div class="page" id="page-dept-경영지원"><div id="deptContent-경영지원"></div></div>
+<div class="page" id="page-dept-무역1"><div id="deptContent-무역1"></div></div>
+<div class="page" id="page-dept-무역2"><div id="deptContent-무역2"></div></div>
+<div class="page" id="page-dept-원료영업"><div id="deptContent-원료영업"></div></div>
+<div class="page" id="page-dept-생산기획"><div id="deptContent-생산기획"></div></div>
+<div class="page" id="page-dept-MD"><div id="deptContent-MD"></div></div>
+<div class="page" id="page-dept-CS발주"><div id="deptContent-CS발주"></div></div>
+<div class="page" id="page-dept-디자인"><div id="deptContent-디자인"></div></div>
+<div class="page" id="page-dept-연구원"><div id="deptContent-연구원"></div></div>
+
+<!-- ══ WEEKLY ══ -->
+<div class="page" id="page-weekly">
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-t">✅ 주간 KPI 점검표</div>
+      <button class="btn btn-csv" onclick="downloadCSV('weekly')" style="font-size:10px;padding:4px 8px">⬇ CSV</button>
+    </div>
+    <div class="alist" id="actionList"></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="sec-lbl">■ 주간 종합 평가</div>
+    <div style="display:flex;flex-direction:column;gap:8px" id="weeklyEval"></div>
+  </div>
+</div>
+
+<!-- ══ INPUT ══ -->
+<div class="page" id="page-input">
+  <div class="card">
+    <div class="sec-lbl">📝 월간 실적 입력</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <div class="period-tabs">
+        <button class="ptab active" onclick="setPeriod('monthly',this)">월간</button>
+        <button class="ptab" onclick="setPeriod('quarterly',this)">분기</button>
+        <button class="ptab" onclick="setPeriod('yearly',this)">연간</button>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg">
+        <label class="fl">부서 선택</label>
+        <select class="fc" id="deptSelect">
+          <option value="">부서를 선택하세요</option>
+          <option>경영지원</option><option>무역1 (카므란)</option><option>무역2 (이리)</option>
+          <option>원료영업</option>
+          <option>생산기획</option><option>MD</option>
+          <option>CS발주</option><option>디자인</option>
+          <option>연구원</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">담당자명</label>
+        <input type="text" class="fc" id="inputManager" placeholder="이름을 입력하세요">
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">입력 기간</label>
+      <input type="month" class="fc" id="inputMonth" value="">
+    </div>
+    <div id="kpiInputFields"></div>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="saveInput()">💾 저장 · 동기화</button>
+      <button class="btn" style="background:var(--bg-4);color:var(--txt2)" onclick="clearInput()">초기화</button>
+    </div>
+  </div>
+
+  <!-- Weekly Action Input -->
+  <div class="card" style="margin-top:14px">
+    <div class="sec-lbl">➕ 주간 액션 추가</div>
+    <div class="frow">
+      <div class="fg"><label class="fl">관련 KPI</label><input type="text" class="fc" id="aKpi" placeholder="e.g. 신규 거래처"></div>
+      <div class="fg"><label class="fl">담당자</label><input type="text" class="fc" id="aOwner" placeholder="이름"></div>
+    </div>
+    <div class="fg"><label class="fl">실행 내용</label><input type="text" class="fc" id="aTxt" placeholder="이번 주 실행한 내용"></div>
+    <div class="fg"><label class="fl">결과</label><input type="text" class="fc" id="aRes" placeholder="결과 기재"></div>
+    <div class="frow">
+      <div class="fg"><label class="fl">발생 문제</label><input type="text" class="fc" id="aIss" placeholder="없음 또는 기재"></div>
+      <div class="fg"><label class="fl">다음 조치</label><input type="text" class="fc" id="aNxt" placeholder="다음 주 조치"></div>
+    </div>
+    <button class="btn btn-p" onclick="addAction()" style="margin-top:6px">➕ 액션 추가</button>
+  </div>
+</div>
+
+</main>
+
+<!-- BOTTOM NAV (Mobile) -->
+<nav class="bnav">
+  <div class="bnav-i">
+    <div class="bni active" data-page="dashboard"><div class="bni-ico">📊</div><div class="bni-lbl">대시보드</div></div>
+    <div class="bni" data-page="kpimaster"><div class="bni-ico">📋</div><div class="bni-lbl">KPI Master</div></div>
+    <div class="bni" data-page="dept-원료영업"><div class="bni-ico">🤝</div><div class="bni-lbl">원료영업</div></div>
+    <div class="bni" data-page="weekly"><div class="bni-ico">✅</div><div class="bni-lbl">주간점검</div></div>
+    <div class="bni" data-page="input"><div class="bni-ico">✏️</div><div class="bni-lbl">입력</div></div>
+  </div>
+</nav>
+</div>
+
+<!-- CSV MODAL -->
+<div class="modal-overlay" id="csvModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-t">⬇ CSV 다운로드</div>
+      <button class="modal-close" onclick="closeCsvModal()">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-csv" onclick="downloadCSV('all_kpi')" style="text-align:left;padding:12px">📊 전체 KPI 실적 데이터</button>
+      <button class="btn btn-csv" onclick="downloadCSV('master')" style="text-align:left;padding:12px">📋 KPI Master (정의 테이블)</button>
+      <button class="btn btn-csv" onclick="downloadCSV('weekly')" style="text-align:left;padding:12px">✅ 주간 액션 리스트</button>
+      <button class="btn btn-csv" onclick="downloadCSV('monthly')" style="text-align:left;padding:12px">📅 월간 실행계획</button>
+      <button class="btn btn-csv" onclick="downloadCSV('issues')" style="text-align:left;padding:12px">⚠️ 개선기록 (이슈 로그)</button>
+      <button class="btn btn-csv" onclick="downloadCSV('score')" style="text-align:left;padding:12px">🏆 부서별 KPI Score</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ PWA 설치 우선 팝업 ══ -->
+<div class="pwa-overlay" id="pwaOverlay">
+  <div class="pwa-modal" id="pwaModal">
+    <div class="pwa-logo">
+      <div class="pwa-logo-mark">B2S</div>
+    </div>
+    <div class="pwa-title">B2S KPI 시스템</div>
+    <div class="pwa-sub">앱으로 설치하면 더 빠르고 편리하게<br>언제 어디서나 사용할 수 있습니다</div>
+
+    <div class="pwa-features">
+      <div class="pwa-feat"><span class="pwa-feat-ico">⚡</span><span>빠른 실행 · 오프라인 지원</span></div>
+      <div class="pwa-feat"><span class="pwa-feat-ico">🔄</span><span>실시간 동기화</span></div>
+      <div class="pwa-feat"><span class="pwa-feat-ico">📱</span><span>홈화면에서 바로 접근</span></div>
+    </div>
+
+    <!-- Android / Desktop: 자동 설치 -->
+    <div id="pwaInstallAuto">
+      <button class="pwa-btn-install" id="pwaInstallBtn">
+        📲 앱 설치하기
+      </button>
+      <button class="pwa-btn-skip" id="pwaSkipBtn">
+        지금은 건너뛰기
+      </button>
+    </div>
+
+    <!-- iOS: 수동 안내 -->
+    <div id="pwaInstallIos" style="display:none">
+      <div class="pwa-ios-guide">
+        <div class="pwa-ios-step">
+          <div class="pwa-ios-num">1</div>
+          <div>하단의 <strong>공유 버튼</strong> <span style="font-size:16px">⎙</span> 을 탭하세요</div>
+        </div>
+        <div class="pwa-ios-step">
+          <div class="pwa-ios-num">2</div>
+          <div><strong>"홈 화면에 추가"</strong> 를 선택하세요</div>
+        </div>
+        <div class="pwa-ios-step">
+          <div class="pwa-ios-num">3</div>
+          <div>오른쪽 상단 <strong>"추가"</strong> 를 탭하세요</div>
+        </div>
+      </div>
+      <button class="pwa-btn-install" onclick="closePwaOverlay(true)" style="background:var(--green)">
+        ✅ 설치 완료했습니다
+      </button>
+      <button class="pwa-btn-skip" id="pwaIosSkipBtn">
+        지금은 건너뛰기
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  B2S KPI 실행관리시스템 v4.0
+//  - Firebase 실시간 동기화 (모바일/웹/앱 크로스 플랫폼)
+//  - KPI Master 테이블 (정의/가중치/Owner/기간)
+//  - 가중치 KPI Score 자동계산
+//  - 경고 시스템 (정상/주의/경고)
+//  - 전월 트렌드 비교
+//  - CSV 다운로드 (6종)
+// ════════════════════════════════════════════════════════
+
+const DB_KEY = 'b2s_kpi_v4';
+const SYNC_DOC = 'b2s_kpi_state';
+let currentPeriod = 'monthly';
+
+// ────────────────────────────────────────────────────────
+//  MASTER DATA
+// ────────────────────────────────────────────────────────
+// KPI 가중치 정의 (합계 = 100%)
+const KPI_WEIGHTS = {
+  '경영지원':  { '주문서 취합 및 발주율':25, '입출고 오류율':25, '재고 관리 정확도':20, '배차 견적 확인율':15, '출고서류 발송율':15 },
+  '무역1':     { '수입 통관 일정 준수율':25, '원료 서류 취합율':20, '신규 공급사 발굴 수':20, '운송비 절감율':20, '발주 오류율':10, '공급가 절감율':5 },
+  '무역2':     { '수입 통관 일정 준수율':25, '원료 서류 취합율':20, '신규 공급사 발굴 수':20, '운송비 절감율':20, '발주 오류율':10, '공급가 절감율':5 },
+  '원료영업':  { '신규 거래처 수':30, '견적→수주 전환율':25, '월 거래처 방문 건수':15, '방문보고서 작성율':10, '방문→샘플 전환율':10, '샘플→발주 전환율':10 },
+  '생산기획':  { '신제품 출시 리드타임':30, '재발주 리드타임':25, '원가 절감율':25, 'OEM 발주 증감율':15, '생산 품질 합격율':5 },
+  'MD':        { '매출 성장률':40, '광고 ROAS':25, '행사 성사율':15, '상위 SKU 매출 비중':10, '적자 SKU 정리율':10 },
+  'CS발주':    { '출고 오류율':25, 'CS 발생율':25, 'CS 처리시간':20, '반품율':20, '발주 처리 정확도':10 },
+  '디자인':    { '작업 기한 준수율':30, '패키지 오류 건수':25, '상세페이지 체류시간':20, '이탈률':15, '평균 수정 횟수':10 },
+  '연구원':    { '개발 일정 준수율':35, '연간 과제 신청 건수':25, '과제 선정율':20, '일일 연구일지 작성율':15, '신규 아이템 제안 건수':5 },
+};
+
+// KPI Owner 정의
+const KPI_OWNERS = {
+  '경영지원':'경영지원팀', '무역1':'카므란', '무역2':'이리',
+  '원료영업':'원료영업팀', '생산기획':'생산기획팀', 'MD':'MD팀',
+  'CS발주':'CS발주팀', '디자인':'디자인팀', '연구원':'연구원팀',
+};
+
+// KPI 기간 분류
+const KPI_PERIODS = {
+  '매출 성장률':'monthly','광고 ROAS':'monthly','행사 성사율':'monthly',
+  '신규 거래처 수':'monthly','월 거래처 방문 건수':'monthly',
+  '신제품 출시 리드타임':'quarterly','원가 절감율':'quarterly','과제 선정율':'quarterly',
+  '연간 과제 신청 건수':'yearly','신규 공급사 발굴 수':'yearly',
+};
+
+// ────────────────────────────────────────────────────────
+//  DEPTS DATA (부서별 전체 KPI + 계획 + 주간 + 이슈)
+// ────────────────────────────────────────────────────────
+const DEPTS = {
+
+  /* ─────────────────────────────
+     경영지원
+  ───────────────────────────── */
+  '경영지원': {
+    icon:'⚙️', color:'#78909c', group:'경영지원',
+    kpi:[
+      {no:1,item:'주문서 취합 및 발주율',target:.98,actual:.95,prev:.94,trend:'▲1%p',comment:'주문서 52건 중 49건 당일 발주 완료',isP:true,cat:'activity'},
+      {no:2,item:'입출고 오류율',target:.02,actual:.03,prev:.035,trend:'▲0.5%p',comment:'입출고 180건 중 오류 5건 발생',isP:true,low:true,cat:'result'},
+      {no:3,item:'재고 관리 정확도',target:.98,actual:.965,prev:.960,trend:'▲0.5%p',comment:'실재고 vs 장부 오차 3.5%',isP:true,cat:'result'},
+      {no:4,item:'배차 견적 확인율',target:.95,actual:.90,prev:.88,trend:'▼2%p',comment:'배차 30건 중 27건 견적 확인 완료',isP:true,cat:'activity'},
+      {no:5,item:'출고서류 발송율',target:1,actual:.93,prev:.90,trend:'▲3%p',comment:'출고 45건 중 42건 서류 완비 발송',isP:true,cat:'activity'},
+    ],
+    monthly:[
+      {no:1,kpi:'주문서 취합/발주',task:'주문서 당일처리 체계 구축',action:'오전 11시 마감, 오후 2시 일괄 발주',due:'3/5',status:'완료'},
+      {no:2,kpi:'입출고 오류율',task:'출고 전 2인 더블체크 프로세스 시행',action:'출고 담당+확인 담당 수량 교차 확인',due:'3/5',status:'완료',note:'오류 0건 달성'},
+      {no:3,kpi:'재고 관리',task:'월 1회 순환 실사 스케줄 수립',action:'구역별 실사 일정표 작성 (A~D구역)',due:'3/8',status:'완료'},
+      {no:4,kpi:'배차 견적 확인',task:'배차 협력사 추가 견적 비교',action:'기존 3사 + 신규 2사 단가 비교표',due:'3/15',status:'진행중',note:'1곳 계약 완료'},
+      {no:5,kpi:'출고서류 발송',task:'서류 매칭 체크리스트 표준화',action:'원료별 필수서류 리스트+매칭 확인란',due:'3/8',status:'완료',note:'누락 건 50% 감소'},
+    ],
+    weekly:[
+      {kpi:'주문서 취합/발주',text:'주문서 52건 접수→48건 당일 발주',result:'48건 완료, 4건 익일 처리',issue:'금요일 오후 접수 건 당일 처리 어려움',next:'금요일 오전 마감 원칙 공지',owner:'담당자',done:false},
+      {kpi:'재고 관리',text:'A구역 순환 실사 진행',result:'장부 대비 98% 일치, B원료 10kg 차이',issue:'B원료 입고 시 검수 수량 미기재',next:'입고 검수 수량 기재 의무화',owner:'담당자',done:false},
+      {kpi:'출고서류 발송',text:'출고 28건 서류 매칭 및 발송',result:'26건 완비 발송, 2건 서류 누락',issue:'수입신고필증 수령 지연',next:'통관 완료 즉시 서류 스캔 체계 구축',owner:'담당자',done:false},
+    ],
+    issues:[
+      {date:'3/7',issue:'출고 수량 오류로 거래처 클레임',cause:'1인 확인으로 수량 누락',action:'출고 전 2인 더블체크 의무화',result:'이후 출고 오류 0건',prevent:'더블체크 체크리스트 비치'},
+      {date:'3/14',issue:'출고서류 누락으로 거래처 입고 지연',cause:'서류 완비 전 출고 진행',action:'서류 완비 확인 후 출고 원칙 수립',result:'누락 건 50% 감소',prevent:'서류 매칭 체크리스트 의무 사용'},
+    ],
+  },
+
+  /* ─────────────────────────────
+     무역 (1·2 동일 KPI 구조)
+  ───────────────────────────── */
+  '무역1': {
+    icon:'🌐', color:'#26c6da', group:'무역', subtitle:'카므란',
+    kpi:[
+      {no:1,item:'수입 통관 일정 준수율',target:.95,actual:.88,prev:.85,trend:'▲3%p',comment:'통관 8건 중 7건 예정일 내 완료',isP:true,cat:'result'},
+      {no:2,item:'원료 서류 취합율',target:1,actual:.92,prev:.90,trend:'▲2%p',comment:'수입 25건 중 23건 서류 완비',isP:true,cat:'activity'},
+      {no:3,item:'신규 공급사 발굴 수',target:2,actual:1,prev:0,trend:'▲1건',comment:'태국 원료 공급사 1곳 신규 발굴',unit:'건',cat:'activity'},
+      {no:4,item:'운송비 절감율',target:.08,actual:.05,prev:.04,trend:'▲1%p',comment:'포워더 변경 건당 $50 절감',isP:true,cat:'result'},
+      {no:5,item:'발주 오류율',target:.02,actual:.015,prev:.02,trend:'▼0.5%p',comment:'더블체크 프로세스 도입 효과',isP:true,low:true,cat:'result'},
+      {no:6,item:'공급가 절감율',target:.05,actual:.032,prev:.025,trend:'▼0.8%p',comment:'대체원료 단가 협상 진행 중',isP:true,cat:'result'},
+    ],
+    monthly:[
+      {no:1,kpi:'운송비 절감',task:'포워더 3사 운송비 비교표 작성',action:'기존 vs 신규 포워더 건당 단가 비교',due:'3/10',status:'완료',note:'B포워더 건당 $50 절감'},
+      {no:2,kpi:'신규 공급사 발굴',task:'동남아 공급사 리스트업 및 컨택',action:'태국/베트남 10곳 컨택',due:'3/25',status:'진행중',note:'3곳 응답'},
+      {no:3,kpi:'서류 취합율',task:'수입건별 서류 체크리스트 운영',action:'품목별 필수서류 리스트+진행현황 관리',due:'3/8',status:'완료'},
+      {no:4,kpi:'발주 오류율',task:'발주서 양식 표준화 및 더블체크 도입',action:'발주 전 팀장 확인 프로세스 적용',due:'3/5',status:'완료',note:'오류 0건 달성'},
+      {no:5,kpi:'공급가 절감',task:'원료 3개 품목 대체 공급사 견적 비교',action:'공급사별 단가표 작성 및 비교분석',due:'3/15',status:'진행중'},
+    ],
+    weekly:[
+      {kpi:'서류 취합율',text:'수입 8건 서류 현황 점검',result:'7건 완비, 1건 원산지증명서 미수령',issue:'현지 공휴일로 발급 지연',next:'발급 완료 후 즉시 스캔 수령 요청',owner:'카므란',done:false},
+      {kpi:'운송비 절감',text:'B포워더 연간 계약 체결',result:'건당 $50 절감 합의, 월 $1,500 효과',issue:'없음',next:'계약서 날인 완료',owner:'카므란',done:true},
+      {kpi:'신규 공급사 발굴',text:'태국 공급사 3곳 화상 미팅',result:'1곳 품질/단가 적합 확인',issue:'2곳 MOQ 과다',next:'적합 업체 공장 실사 일정 조율',owner:'카므란',done:false},
+    ],
+    issues:[
+      {date:'3/5',issue:'발주서 품명 오기재로 오배송 발생',cause:'수기 입력 시 품명코드 미확인',action:'발주서에 품명코드 필수 입력란 추가',result:'오배송 0건 (3월)',prevent:'품명코드 자동완성 기능 도입 예정'},
+      {date:'3/12',issue:'통관 지연 3일 (원산지증명서 누락)',cause:'현지 공휴일 일정 미확인',action:'수입건별 서류 체크리스트 도입',result:'이후 서류 누락 0건',prevent:'현지 공휴일 캘린더 공유'},
+    ],
+  },
+
+  '무역2': {
+    icon:'🌐', color:'#4dd0e1', group:'무역', subtitle:'이리',
+    kpi:[
+      {no:1,item:'수입 통관 일정 준수율',target:.95,actual:.90,prev:.88,trend:'▲2%p',comment:'통관 10건 중 9건 예정일 내 완료',isP:true,cat:'result'},
+      {no:2,item:'원료 서류 취합율',target:1,actual:.95,prev:.92,trend:'▲3%p',comment:'수입 20건 중 19건 서류 완비',isP:true,cat:'activity'},
+      {no:3,item:'신규 공급사 발굴 수',target:2,actual:1,prev:0,trend:'▲1건',comment:'베트남 원료 공급사 1곳 신규 발굴',unit:'건',cat:'activity'},
+      {no:4,item:'운송비 절감율',target:.08,actual:.06,prev:.04,trend:'▲2%p',comment:'항공→해운 전환으로 비용 절감',isP:true,cat:'result'},
+      {no:5,item:'발주 오류율',target:.02,actual:.01,prev:.015,trend:'▼1%p',comment:'전자발주 시스템 도입 효과',isP:true,low:true,cat:'result'},
+      {no:6,item:'공급가 절감율',target:.05,actual:.04,prev:.03,trend:'▲1%p',comment:'베트남 현지 협상 단가 4% 절감',isP:true,cat:'result'},
+    ],
+    monthly:[
+      {no:1,kpi:'운송비 절감',task:'항공→해운 전환 가능 품목 선별',action:'리드타임 여유 있는 품목 해운 전환',due:'3/10',status:'완료',note:'3개 품목 해운 전환'},
+      {no:2,kpi:'신규 공급사 발굴',task:'베트남 현지 공급사 리스트업',action:'KOTRA 베트남 바이어 DB 활용',due:'3/20',status:'진행중',note:'2곳 응답'},
+      {no:3,kpi:'서류 취합율',task:'수입건별 서류 체크리스트 운영',action:'품목별 필수서류 리스트+진행현황 관리',due:'3/8',status:'완료'},
+      {no:4,kpi:'발주 오류율',task:'전자발주 시스템 전환',action:'수기 발주서→ERP 전자발주 전환',due:'3/5',status:'완료',note:'오류율 50% 감소'},
+      {no:5,kpi:'공급가 절감',task:'베트남 주요 원료 단가 재협상',action:'분기 물량 약정 조건으로 단가 인하 요청',due:'3/15',status:'완료',note:'평균 4% 절감'},
+    ],
+    weekly:[
+      {kpi:'서류 취합율',text:'수입 6건 서류 현황 점검',result:'6건 모두 서류 완비',issue:'없음',next:'다음 주 수입 8건 서류 사전 준비',owner:'이리',done:true},
+      {kpi:'운송비 절감',text:'해운 전환 3개 품목 운송 현황 확인',result:'예정 도착일 내 도착 확인',issue:'없음',next:'추가 2개 품목 해운 전환 검토',owner:'이리',done:true},
+      {kpi:'신규 공급사 발굴',text:'베트남 공급사 2곳 이메일 미팅',result:'1곳 견적서 수령',issue:'1곳 응답 지연',next:'응답 지연 업체 재컨택',owner:'이리',done:false},
+    ],
+    issues:[
+      {date:'3/8',issue:'해운 전환 품목 도착 2일 지연',cause:'선적 일정 변경 미통보',action:'선적 완료 즉시 일정 공유 요청',result:'이후 일정 공유 100%',prevent:'선적 후 24시간 내 ETD 공유 원칙'},
+      {date:'3/15',issue:'발주서 수량 단위 오기재 (kg→ton)',cause:'단위 변환 미확인',action:'발주서 단위 검증 체크리스트 추가',result:'이후 단위 오류 0건',prevent:'발주 전 단위 2중 확인'},
+    ],
+  },
+
+  /* ─────────────────────────────
+     원료영업
+  ───────────────────────────── */
+  '원료영업': {
+    icon:'🤝', color:'#7e57c2', group:'원료영업',
+    kpi:[
+      {no:1,item:'신규 거래처 수',target:5,actual:3,prev:2,trend:'▲1건',comment:'식품업체 2곳, 화장품업체 1곳 신규 계약',unit:'건',cat:'result'},
+      {no:2,item:'견적→수주 전환율',target:.30,actual:.25,prev:.23,trend:'▼2%p',comment:'견적 12건 중 3건 수주',isP:true,cat:'convert'},
+      {no:3,item:'월 거래처 방문 건수',target:20,actual:15,prev:12,trend:'▲3건',comment:'식품 8곳, 화장품 5곳, 기타 2곳 방문',unit:'건',cat:'activity'},
+      {no:4,item:'방문보고서 작성율',target:1,actual:.87,prev:.80,trend:'▲7%p',comment:'15건 방문 중 13건 보고서 작성',isP:true,cat:'activity'},
+      {no:5,item:'방문→샘플 전환율',target:.50,actual:.40,prev:.35,trend:'▲5%p',comment:'방문 15건 중 6건 샘플 요청',isP:true,cat:'convert'},
+      {no:6,item:'샘플→발주 전환율',target:.40,actual:.33,prev:.30,trend:'▲3%p',comment:'샘플 6건 중 2건 발주 전환',isP:true,cat:'convert'},
+      {no:7,item:'기존 거래처 매출 증가율',target:.10,actual:.08,prev:.07,trend:'▲1%p',comment:'A식품 리오더 15% 증가',isP:true,cat:'result'},
+      {no:8,item:'후속조치 실행율',target:.90,actual:.80,prev:.75,trend:'▲5%p',comment:'15건 중 12건 7일 내 후속 연락 완료',isP:true,cat:'activity'},
+    ],
+    monthly:[
+      {no:1,kpi:'신규 거래처',task:'화장품 업체 타겟 리스트 20곳 작성',action:'업종별 잠재고객 DB 구축',due:'3/10',status:'완료'},
+      {no:2,kpi:'방문 건수',task:'타겟 10곳 방문 스케줄 수립',action:'주 3회 방문 일정 사전 배정',due:'3/5',status:'완료',note:'주간 방문 캘린더 공유'},
+      {no:3,kpi:'견적→수주',task:'미수주 건 원인분석 및 재제안',action:'실패 사유별 분류 후 가격 재조정',due:'3/15',status:'진행중',note:'3건 재제안 완료'},
+      {no:4,kpi:'샘플→발주',task:'샘플 제공 후 2주 내 Follow-up 강화',action:'샘플 발송 7일/14일 후 연락 스케줄',due:'3/12',status:'완료'},
+      {no:5,kpi:'방문보고서',task:'방문보고서 양식 표준화 및 교육',action:'방문목적/결과/후속조치 양식 배포',due:'3/5',status:'완료',note:'전 담당 교육 완료'},
+    ],
+    weekly:[
+      {kpi:'방문 건수',text:'타겟 업체 5곳 방문 진행',result:'5곳 방문 완료 (식품 3, 화장품 2)',issue:'화장품 1곳 담당자 부재',next:'다음주 재방문 일정 확정',owner:'담당자',done:false},
+      {kpi:'샘플→발주',text:'기 발송 샘플 3건 Follow-up',result:'1건 발주 확정, 2건 테스트 진행중',issue:'1건 테스트 결과 2주 소요',next:'테스트 완료 즉시 단가 제안',owner:'담당자',done:false},
+      {kpi:'견적→수주',text:'미수주 3건 재제안서 발송',result:'1건 수주 확정, 2건 검토중',issue:'경쟁사 대비 단가 5% 높음',next:'원가 재산정 후 최종 단가 제시',owner:'담당자',done:false},
+      {kpi:'기존 거래처',text:'A식품 분기 미팅',result:'리오더 15% 증가 합의',issue:'없음',next:'발주서 수령 대기',owner:'담당자',done:true},
+    ],
+    issues:[
+      {date:'3/8',issue:'견적서 단가 오기재로 클레임',cause:'구버전 단가표 참조',action:'단가표 클라우드 관리+버전관리 도입',result:'이후 오기재 0건',prevent:'단가 변경 시 알림 시스템 구축'},
+      {date:'3/15',issue:'후속조치 미실행으로 샘플 요청 기회 상실',cause:'방문 후 후속 연락 기한 미설정',action:'CRM 후속 일정 자동 등록 + 7일 알림',result:'후속 실행율 80%→개선 중',prevent:'미실행 건 주간 점검에서 원인 분석'},
+    ],
+  },
+
+  /* ─────────────────────────────
+     생산기획
+  ───────────────────────────── */
+  '생산기획': {
+    icon:'🏗️', color:'#ff8a65', group:'생산기획',
+    kpi:[
+      {no:1,item:'신제품 출시 리드타임',target:60,actual:75,prev:80,trend:'▼5일',comment:'평균 75일 소요 (목표 60일)',unit:'일',low:true,cat:'result'},
+      {no:2,item:'재발주 리드타임',target:14,actual:12,prev:13,trend:'▼1일',comment:'재발주 평균 12일 (목표 14일 이내)',unit:'일',low:true,cat:'result'},
+      {no:3,item:'원가 절감율',target:.05,actual:.03,prev:.02,trend:'▲1%p',comment:'3개 품목 원가 3% 절감',isP:true,cat:'result'},
+      {no:4,item:'OEM 발주 증감율',target:.10,actual:.08,prev:.06,trend:'▲2%p',comment:'전월 대비 OEM 발주 8% 증가',isP:true,cat:'result'},
+      {no:5,item:'생산 품질 합격율',target:.98,actual:.95,prev:.94,trend:'▲1%p',comment:'출고 전 품질 검사 합격율',isP:true,cat:'result'},
+    ],
+    monthly:[
+      {no:1,kpi:'신제품 리드타임',task:'출시 프로세스 타임라인 수립',action:'기획→개발→생산→출시 D-day 설정',due:'3/10',status:'완료'},
+      {no:2,kpi:'신제품 리드타임',task:'OEM 공장 리드타임 단축 협의',action:'주요 3개 공장 생산 일정 단축 요청',due:'3/20',status:'진행중',note:'1곳 5일 단축 합의'},
+      {no:3,kpi:'원가 절감율',task:'포장재 단가 비교 및 변경',action:'기존 vs 신규 포장재 3사 비교',due:'3/15',status:'완료',note:'건당 150원 절감'},
+      {no:4,kpi:'OEM 발주',task:'OEM 파트너 신규 1곳 발굴',action:'소량 생산 가능 OEM 공장 조사',due:'3/25',status:'진행중',note:'3곳 컨택 완료'},
+      {no:5,kpi:'재발주 리드타임',task:'재발주 자동 알림 시스템 구축',action:'안전재고 도달 시 자동 알림 발송',due:'3/15',status:'진행중'},
+    ],
+    weekly:[
+      {kpi:'신제품 리드타임',text:'신제품 A 생산 일정 관리',result:'기획 완료→OEM 샘플 의뢰 완료',issue:'OEM 공장 샘플 생산 1주 지연',next:'후속 공정 병행 진행으로 만회 계획',owner:'담당자',done:false},
+      {kpi:'원가 절감율',text:'포장재 변경 3개 품목 적용',result:'건당 150원 절감, 월 45만원 효과',issue:'없음',next:'추가 5개 품목 변경 검토',owner:'담당자',done:true},
+      {kpi:'OEM 발주',text:'OEM 공장 3곳 소량 생산 견적 비교',result:'1곳 단가/품질 적합 확인',issue:'2곳 MOQ 과다',next:'적합 업체와 시험 생산 진행',owner:'담당자',done:false},
+    ],
+    issues:[
+      {date:'3/5',issue:'OEM 생산 색상 불일치 3건',cause:'컬러 기준 견본 미제공',action:'OEM 발주 시 컬러칩 필수 첨부',result:'이후 색상 불일치 0건',prevent:'디지털 컬러코드+실물 견본 이중 제공'},
+      {date:'3/18',issue:'재발주 지연으로 2개 SKU 품절 발생',cause:'안전재고 기준 미설정',action:'SKU별 안전재고 기준 수립+자동 알림',result:'이후 재발주 지연 0건',prevent:'주간 재고 모니터링 리포트 발행'},
+    ],
+  },
+
+  /* ─────────────────────────────
+     MD
+  ───────────────────────────── */
+  'MD': {
+    icon:'🛒', color:'#66bb6a', group:'MD',
+    kpi:[
+      {no:1,item:'매출 성장률',target:.15,actual:.12,prev:.10,trend:'▲2%p',comment:'전월 대비 12% 성장 (목표 15%)',isP:true,cat:'result'},
+      {no:2,item:'광고 ROAS',target:3.5,actual:2.8,prev:2.5,trend:'▲0.3',comment:'광고비 2,000만원 / 매출 5,600만원',cat:'result'},
+      {no:3,item:'상위 SKU 매출 비중',target:.60,actual:.55,prev:.52,trend:'▲3%p',comment:'상위 5개 SKU 매출 비중 55%',isP:true,cat:'result'},
+      {no:4,item:'적자 SKU 정리율',target:.30,actual:.20,prev:.10,trend:'▲10%p',comment:'적자 SKU 15개 중 3개 단종 완료',isP:true,cat:'activity'},
+      {no:5,item:'행사 성사율',target:.70,actual:.60,prev:.55,trend:'▲5%p',comment:'행사 제안 10건 중 6건 성사',isP:true,cat:'convert'},
+      {no:6,item:'재고 회전율',target:6,actual:5.2,prev:5.0,trend:'▲0.3회',comment:'원료 재고 소진 속도 개선 필요',unit:'회',cat:'result'},
+    ],
+    monthly:[
+      {no:1,kpi:'매출 성장률',task:'봄맞이 프로모션 기획전 운영',action:'쿠팡/네이버 할인 기획전 등록',due:'3/5',status:'완료'},
+      {no:2,kpi:'광고 ROAS',task:'저효율 키워드 정리 및 예산 재배분',action:'ROAS 2.0 미만 키워드 OFF',due:'3/10',status:'완료',note:'20개 키워드 중단'},
+      {no:3,kpi:'적자 SKU 정리율',task:'적자 SKU 15개 수익성 분석',action:'SKU별 원가/마진/판매량 분석표',due:'3/8',status:'완료',note:'3개 즉시 단종'},
+      {no:4,kpi:'행사 성사율',task:'유통채널 행사 제안서 5건 작성',action:'쿠팡/네이버/올리브영 등 행사 제안',due:'3/20',status:'진행중',note:'3건 제안 완료'},
+      {no:5,kpi:'상위 SKU 매출비중',task:'인기 SKU 번들 세트 3종 기획',action:'상위 5개 SKU 묶음 세트 구성',due:'3/20',status:'진행중'},
+    ],
+    weekly:[
+      {kpi:'매출 성장률',text:'봄맞이 기획전 운영',result:'기획전 매출 1,200만원 달성',issue:'네이버 노출 순위 하락',next:'키워드 광고 예산 30% 증액',owner:'담당자',done:false},
+      {kpi:'광고 ROAS',text:'저효율 키워드 20개 중단 후 성과',result:'ROAS 2.8→3.1 개선',issue:'없음',next:'고효율 키워드 예산 추가 배분',owner:'담당자',done:true},
+      {kpi:'행사 성사율',text:'유통채널 행사 제안 3건 발송',result:'2건 성사, 1건 조건 협의중',issue:'1건 수수료율 과다 요구',next:'수수료 역제안 + 물량 조건 제시',owner:'담당자',done:false},
+    ],
+    issues:[
+      {date:'3/6',issue:'인기 SKU 재고 소진으로 3일 품절',cause:'판매 속도 예측 실패',action:'안전재고 2주분 확보 기준 수립',result:'이후 품절 0건',prevent:'주간 판매속도 모니터링 자동화'},
+    ],
+  },
+
+  /* ─────────────────────────────
+     CS발주
+  ───────────────────────────── */
+  'CS발주': {
+    icon:'📋', color:'#81c784', group:'CS발주',
+    kpi:[
+      {no:1,item:'출고 오류율',target:.01,actual:.015,prev:.02,trend:'▼0.5%p',comment:'출고 500건 중 7건 오류',isP:true,low:true,cat:'result'},
+      {no:2,item:'CS 처리시간',target:24,actual:18,prev:21,trend:'▼3시간',comment:'평균 18시간 내 처리 완료',unit:'시간',low:true,cat:'result'},
+      {no:3,item:'CS 발생율',target:.05,actual:.06,prev:.065,trend:'▲0.3%p',comment:'주문 500건 중 CS 30건 발생',isP:true,low:true,cat:'result'},
+      {no:4,item:'반품율',target:.03,actual:.035,prev:.04,trend:'▲0.2%p',comment:'반품 18건 (파손 8, 오배송 5, 변심 5)',isP:true,low:true,cat:'result'},
+      {no:5,item:'발주 처리 정확도',target:.99,actual:.97,prev:.96,trend:'▲1%p',comment:'발주 320건 중 오류 9건',isP:true,cat:'result'},
+    ],
+    monthly:[
+      {no:1,kpi:'출고 오류율',task:'출고 전 바코드 스캔 검증 도입',action:'전 출고건 바코드 대조 시행',due:'3/5',status:'완료'},
+      {no:2,kpi:'CS 발생율',task:'CS 발생 원인 Top5 분석 및 개선',action:'오배송/파손/수량오류 분류',due:'3/12',status:'완료',note:'오배송 원인 집중 개선'},
+      {no:3,kpi:'반품율',task:'파손 저감 포장 개선',action:'완충재 추가 및 박스 규격 변경',due:'3/15',status:'진행중',note:'파손 반품 50% 감소 목표'},
+      {no:4,kpi:'발주 처리 정확도',task:'발주서 검증 체크리스트 적용',action:'수량/단가/납기 3중 체크',due:'3/5',status:'완료'},
+    ],
+    weekly:[
+      {kpi:'출고 오류율',text:'바코드 스캔 검증 운영',result:'출고 120건 중 오류 1건',issue:'라벨 프린터 불량',next:'프린터 점검 및 교체 검토',owner:'담당자',done:false},
+      {kpi:'반품율',text:'포장 개선 시범 적용',result:'파손 반품 8건→3건 감소',issue:'완충재 비용 증가 건당 +200원',next:'비용 대비 효과 분석',owner:'담당자',done:false},
+      {kpi:'CS 처리시간',text:'자동응답 10개 항목 설정 완료',result:'단순 문의 40% 자동 처리',issue:'없음',next:'추가 10개 항목 설정 예정',owner:'담당자',done:true},
+    ],
+    issues:[
+      {date:'3/4',issue:'동일 주문 2건 중복 출고',cause:'시스템 중복 주문 필터 미작동',action:'중복 주문 자동 알림 기능 개발 요청',result:'이후 중복 출고 0건',prevent:'주문 접수 시 중복 체크 로직 추가'},
+    ],
+  },
+
+  /* ─────────────────────────────
+     디자인
+  ───────────────────────────── */
+  '디자인': {
+    icon:'🎨', color:'#ab47bc', group:'디자인',
+    kpi:[
+      {no:1,item:'작업 기한 준수율',target:.90,actual:.85,prev:.80,trend:'▲5%p',comment:'20건 중 17건 기한 내 완료',isP:true,cat:'result'},
+      {no:2,item:'평균 수정 횟수',target:2,actual:2.5,prev:2.8,trend:'▼0.3회',comment:'평균 2.5회 수정 (목표 2회 이내)',unit:'회',low:true,cat:'activity'},
+      {no:3,item:'패키지 오류 건수',target:0,actual:2,prev:3,trend:'▼1건',comment:'패키지 인쇄 오류 2건 발생',unit:'건',low:true,cat:'result'},
+      {no:4,item:'상세페이지 체류시간',target:45,actual:38,prev:35,trend:'▲3초',comment:'평균 체류시간 38초',unit:'초',cat:'result'},
+      {no:5,item:'이탈률',target:.40,actual:.48,prev:.50,trend:'▼2%p',comment:'상세페이지 이탈률 48%',isP:true,low:true,cat:'result'},
+      {no:6,item:'스크롤 도달률',target:.70,actual:.62,prev:.57,trend:'▲5%p',comment:'하단 도달률 62% (목표 70%)',isP:true,cat:'result'},
+    ],
+    monthly:[
+      {no:1,kpi:'작업 기한 준수율',task:'디자인 요청서 양식 표준화',action:'레퍼런스+마감일 필수 기재',due:'3/5',status:'완료'},
+      {no:2,kpi:'상세페이지 체류시간',task:'상위 10개 SKU 상세페이지 리뉴얼',action:'스토리텔링 구조 + 동영상 삽입',due:'3/25',status:'진행중',note:'3개 완료'},
+      {no:3,kpi:'패키지 오류 건수',task:'패키지 시안 최종 검수 체크리스트 도입',action:'텍스트/색상/바코드/규격 4중 체크',due:'3/8',status:'완료'},
+      {no:4,kpi:'이탈률',task:'첫 화면 후킹 요소 강화',action:'핵심 혜택 3초 내 전달 구조 설계',due:'3/20',status:'진행중'},
+    ],
+    weekly:[
+      {kpi:'작업 기한 준수율',text:'이번주 작업 8건 진행',result:'7건 기한 내 완료, 1건 1일 지연',issue:'긴급 요청 3건 끼어들어 스케줄 조정',next:'긴급 요청 별도 슬롯 확보 (주 2건)',owner:'담당자',done:false},
+      {kpi:'이탈률/스크롤도달률',text:'A/B테스트 2건 결과 분석',result:'이탈률 5%p 감소, 스크롤 도달률 8%p 증가',issue:'없음',next:'성공 패턴 다른 SKU에 확대 적용',owner:'담당자',done:true},
+      {kpi:'패키지 오류',text:'신제품 패키지 2건 최종 검수',result:'1건 통과, 1건 바코드 위치 수정',issue:'바코드 규격 가이드 미참조',next:'패키지 검수 시 바코드 규격 체크 추가',owner:'담당자',done:false},
+    ],
+    issues:[
+      {date:'3/9',issue:'패키지 색상 불일치로 재인쇄 발생',cause:'모니터 vs 인쇄 색상 차이 미검증',action:'인쇄 전 색상 교정지 확인 의무화',result:'이후 색상 오류 0건',prevent:'디지털 컬러코드+실물 교정지 이중 확인'},
+      {date:'3/16',issue:'긴급 요청으로 기존 일정 3건 지연',cause:'긴급 요청 우선순위 기준 없음',action:'긴급 슬롯 주 2건 확보, 초과 시 일정 조정 합의',result:'기한 준수율 85%→90% 개선',prevent:'긴급 요청 접수 기준 명문화'},
+    ],
+  },
+
+  /* ─────────────────────────────
+     연구원
+  ───────────────────────────── */
+  '연구원': {
+    icon:'🔬', color:'#ffa726', group:'연구원',
+    kpi:[
+      {no:1,item:'개발 일정 준수율',target:.85,actual:.80,prev:.75,trend:'▲5%p',comment:'5개 과제 중 4개 일정 준수',isP:true,cat:'result'},
+      {no:2,item:'업체 응답 평균 소요일',target:3,actual:4.5,prev:5,trend:'▼0.5일',comment:'업체 응답 평균 4.5일 (목표 3일)',unit:'일',low:true,cat:'activity'},
+      {no:3,item:'일일 연구일지 작성율',target:1,actual:.85,prev:.80,trend:'▲5%p',comment:'근무일 22일 중 19일 작성',isP:true,cat:'activity'},
+      {no:4,item:'연간 과제 신청 건수',target:6,actual:4,prev:3,trend:'▲1건',comment:'연간 목표 6건 중 4건 신청 완료',unit:'건',cat:'result'},
+      {no:5,item:'과제 선정율',target:.50,actual:.50,prev:.40,trend:'▲10%p',comment:'신청 4건 중 2건 선정',isP:true,cat:'result'},
+      {no:6,item:'신규 아이템 제안 건수',target:3,actual:2,prev:1,trend:'▲1건',comment:'1분기 목표 3건 중 2건 제안 완료',unit:'건',cat:'activity'},
+    ],
+    monthly:[
+      {no:1,kpi:'개발 일정 준수율',task:'주간 연구 진척 보고 체계 구축',action:'매주 금요일 진척보고서 제출',due:'3/5',status:'완료'},
+      {no:2,kpi:'업체 응답 소요일',task:'협력업체 응답 기한 합의',action:'견적/샘플/시험 요청 시 응답기한 명시',due:'3/10',status:'완료',note:'응답 기한 3영업일 합의'},
+      {no:3,kpi:'과제 신청 건수',task:'2분기 정부과제 공고 모니터링',action:'NTIS/중기부 공고 주 1회 확인',due:'상시',status:'진행중',note:'2건 후보 확인'},
+      {no:4,kpi:'신규 아이템 제안',task:'시장 트렌드 분석→신규 아이템 발굴',action:'원료/제형 트렌드 보고서 작성',due:'3/20',status:'진행중'},
+      {no:5,kpi:'개발 일정 준수율',task:'기능성 원료 B 안정성 테스트 완료',action:'3개월 가속시험 최종 분석',due:'3/25',status:'진행중'},
+    ],
+    weekly:[
+      {kpi:'개발 일정 준수율',text:'5개 과제 주간 진척 점검',result:'4개 일정 준수, 1개 1주 지연',issue:'외부 시험기관 결과 지연',next:'시험기관 독촉+대체 기관 검토',owner:'담당자',done:false},
+      {kpi:'연구일지 작성율',text:'이번주 연구일지 작성 현황',result:'5일 중 4일 작성 (금요일 미작성)',issue:'금요일 외부 미팅으로 미작성',next:'외부 미팅일도 간략 작성 원칙 수립',owner:'담당자',done:false},
+      {kpi:'신규 아이템 제안',text:'원료 트렌드 분석 보고서 작성',result:'기능성 원료 3개 트렌드 분석 완료',issue:'없음',next:'2건 아이템 제안서 작성 예정',owner:'담당자',done:true},
+    ],
+    issues:[
+      {date:'3/8',issue:'가속시험 샘플 온도 관리 실패→재시험',cause:'항온항습기 온도 센서 오작동',action:'장비 정기 점검 주기 월→격주 변경',result:'이후 장비 오작동 0건',prevent:'장비 점검 체크리스트 작성 및 부착'},
+      {date:'3/20',issue:'정부과제 보고서 양식 변경 미인지',cause:'NTIS 공지 미확인',action:'정부과제 관련 공지 주 1회 확인 의무화',result:'변경 양식으로 재작성 완료',prevent:'NTIS 알림 메일 설정'},
+    ],
+  },
+};
+
+// ────────────────────────────────────────────────────────
+//  COMPANY KPI
+// ────────────────────────────────────────────────────────
+const COMPANY_KPI = [
+  {no:1,item:'총매출',target:500000000,actual:420000000,prev:400000000,trend:'▲5%',comment:'3월 매출 4.2억 (목표 5억 대비 84%)'},
+  {no:2,item:'매출총이익률',target:.35,actual:.32,prev:.31,trend:'▲1%p',comment:'원가율 상승으로 소폭 하락',isP:true},
+  {no:3,item:'인건비율',target:.20,actual:.22,prev:.21,trend:'▲0.5%p',comment:'신규 채용 2명 반영',isP:true,low:true},
+  {no:4,item:'재고회전율',target:6,actual:5.2,prev:5.0,trend:'▲0.3회',comment:'원료 재고 소진 속도 개선 필요',unit:'회'},
+  {no:5,item:'현금잔고',target:300000000,actual:280000000,prev:300000000,trend:'▼2천만',comment:'3월 원료 대금 결제 반영'},
+];
+
+const MONTHLY_KPI = [
+  {no:1,item:'총매출',target:500000000,actual:420000000,prev:400000000,trend:'▲5%',comment:'핵심 매출 KPI'},
+  {no:2,item:'원료영업 신규 거래처',target:5,actual:3,prev:2,trend:'▲1건',comment:'월간 신규 거래처 목표',unit:'건'},
+  {no:3,item:'생산 리드타임',target:60,actual:75,prev:80,trend:'▼5일',comment:'신제품 출시 속도',unit:'일',low:true},
+];
+
+const WEEKLY_ACTIONS = [
+  {kpi:'총매출',text:'봄맞이 기획전 운영 (쿠팡/네이버)',result:'기획전 매출 1,200만원 달성',issue:'네이버 노출 순위 하락',next:'키워드 광고 예산 30% 증액',owner:'강OO',done:false},
+  {kpi:'ROAS',text:'저효율 키워드 20개 중단',result:'ROAS 2.8→3.1 개선',issue:'없음',next:'고효율 키워드 예산 추가 배분',owner:'강OO',done:true},
+  {kpi:'원료 공급가',text:'대체 공급사 3곳 견적 비교',result:'2곳 기존 대비 8% 저렴',issue:'최저가 업체 샘플 미도착',next:'샘플 도착 후 품질 테스트',owner:'카므란',done:false},
+  {kpi:'CS 처리',text:'CS 발생 원인 Top5 분석',result:'오배송 40%, 파손 27%',issue:'오배송 비중 높음',next:'출고 검증 강화',owner:'오OO',done:false},
+  {kpi:'디자인 기한',text:'상세페이지 A/B테스트 3건',result:'2건 체류시간 10초↑',issue:'1건 효과 미미',next:'고객 리뷰 분석 후 재설계',owner:'민OO',done:false},
+  {kpi:'R&D 일정',text:'기능성 원료 B 가속시험',result:'안정성 90% 확인',issue:'pH 변화 시 안정성 저하',next:'pH 안정제 추가 배합 테스트',owner:'박OO',done:false},
+  {kpi:'OEM 리드타임',text:'신제품 A OEM 샘플 의뢰',result:'의뢰 완료, 샘플 대기',issue:'공장 측 1주 지연 통보',next:'후속 공정 병행 진행',owner:'임OO',done:false},
+];
+
+const WEEKLY_EVAL = [
+  {label:'이번주 잘한 점',text:'ROAS 3.1 달성 / 대체 공급사 2곳 확보 / 포워더 비용 건당 $50 절감 합의 / CS 원인 분석 완료',type:'good'},
+  {label:'이번주 부족한 점',text:'올리브영 수수료 협상 난항 / OEM 샘플 지연 / 상세페이지 1건 효과 미미 / 라벨 프린터 불량',type:'bad'},
+  {label:'다음주 최우선 과제',text:'① 올리브영 수수료 최종 협상  ② 대체 공급사 샘플 품질 테스트  ③ CS 오배송 방지 시스템 개발',type:'next'},
+];
+
+// ────────────────────────────────────────────────────────
+//  STATE (로컬 + Firebase 동기화)
+// ────────────────────────────────────────────────────────
+function loadState() {
+  try {
+    const s = localStorage.getItem(DB_KEY);
+    return s ? JSON.parse(s) : { depts: {}, weeklyActions: [...WEEKLY_ACTIONS], kpiOverrides: {}, lastSync: null };
+  } catch { return { depts: {}, weeklyActions: [...WEEKLY_ACTIONS], kpiOverrides: {}, lastSync: null }; }
+}
+function saveState() {
+  try { localStorage.setItem(DB_KEY, JSON.stringify(STATE)); } catch(e) { console.error('LocalStorage save failed:', e); }
+}
+
+let STATE = loadState();
+if (!STATE.weeklyActions || !Array.isArray(STATE.weeklyActions) || !STATE.weeklyActions.length) STATE.weeklyActions = [...WEEKLY_ACTIONS];
+if (!STATE.kpiOverrides) STATE.kpiOverrides = {};
+if (!STATE.depts) STATE.depts = {};
+
+// ────────────────────────────────────────────────────────
+//  FIREBASE SYNC
+// ────────────────────────────────────────────────────────
+let syncUnsubscribe = null;
+
+async function syncToFirebase(uid) {
+  if (!window._syncEnabled || !window._db) return;
+  const { doc: fDoc, setDoc } = window._firestore;
+  const resolvedUid = uid || (window._currentUser && window._currentUser.uid);
+  const docPath = resolvedUid ? `users/${resolvedUid}/kpi_state` : `kpi_data/${SYNC_DOC}`;
+  try {
+    setSyncStatus('syncing');
+    const payload = {
+      kpiOverrides: STATE.kpiOverrides || {},
+      weeklyActions: STATE.weeklyActions || [],
+      depts: STATE.depts || {},
+      updatedAt: new Date().toISOString(),
+      uid: resolvedUid || null,
+      version: 'v4'
+    };
+    await setDoc(fDoc(window._db, docPath), payload, { merge: true });
+    STATE.lastSync = new Date().toISOString();
+    saveState();
+    setSyncStatus('online');
+    showToast('☁️ Firebase 동기화 완료');
+  } catch(e) {
+    console.error('Firebase sync error:', e);
+    setSyncStatus('offline');
+  }
+}
+
+// 사용자별 동기화 경로 설정
+window.setupUserSync = function(uid) {
+  setupRealtimeSync(uid);
+  syncToFirebase(uid);
+};
+
+function setupRealtimeSync(uid) {
+  if (!window._syncEnabled || !window._db) return;
+  const { doc: fDoc, onSnapshot } = window._firestore;
+  if (syncUnsubscribe) syncUnsubscribe();
+  // uid 있으면 사용자별, 없으면 공용 문서
+  const docPath = uid ? `users/${uid}/kpi_state` : `kpi_data/${SYNC_DOC}`;
+  const [col, ...rest] = docPath.split('/');
+  syncUnsubscribe = onSnapshot(
+    fDoc(window._db, docPath),
+    (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        // Only update if remote is newer than local
+        const remoteTime = data.updatedAt ? new Date(data.updatedAt) : new Date(0);
+        const localTime = STATE.lastSync ? new Date(STATE.lastSync) : new Date(0);
+        if (remoteTime > localTime) {
+          if (data.kpiOverrides) STATE.kpiOverrides = data.kpiOverrides;
+          if (data.weeklyActions) STATE.weeklyActions = data.weeklyActions;
+          if (data.depts) STATE.depts = data.depts;
+          STATE.lastSync = data.updatedAt;
+          saveState();
+          renderAll();
+          showToast('🔄 최신 데이터로 업데이트됨');
+        }
+        setSyncStatus('online');
+      }
+    },
+    (err) => { console.error('Realtime sync error:', err); setSyncStatus('offline'); }
+  );
+}
+
+function setSyncStatus(status) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncStatusText');
+  const bar = document.getElementById('syncBar');
+  if (!dot) return;
+  dot.className = 'sync-dot ' + status;
+  if (status === 'online') {
+    txt.textContent = '클라우드 동기화 중';
+    bar.className = 'sync-bar synced show';
+    bar.textContent = '✅ 동기화 완료 — 모든 기기에서 최신 데이터';
+    setTimeout(() => bar.classList.remove('show'), 3000);
+  } else if (status === 'syncing') {
+    txt.textContent = '동기화 중...';
+    bar.className = 'sync-bar show';
+    bar.textContent = '🔄 동기화 중...';
+  } else {
+    txt.textContent = '오프라인 모드';
+    bar.className = 'sync-bar';
+  }
+}
+
+// ────────────────────────────────────────────────────────
+//  UTILS
+// ────────────────────────────────────────────────────────
+function rate(k) {
+  const actual = getActual(k);
+  const target = k.target;
+  if (target === 0) return actual === 0 ? 1 : 0;
+  if (k.low) return actual === 0 ? 1 : Math.min(target / actual, 1.5);
+  return actual / target;
+}
+
+function getActual(k) {
+  // Check for user override in STATE
+  const key = k._deptKey ? `${k._deptKey}__${k.item}` : k.item;
+  return (STATE.kpiOverrides && STATE.kpiOverrides[key] !== undefined) ? STATE.kpiOverrides[key] : k.actual;
+}
+
+function weightedScore(deptKey) {
+  const d = DEPTS[deptKey]; if(!d) return 0;
+  const weights = KPI_WEIGHTS[deptKey] || {};
+  let totalWeight = 0, totalScore = 0;
+  d.kpi.forEach(k => {
+    const w = weights[k.item] || (100 / d.kpi.length);
+    const r = Math.min(rate({...k,_deptKey:deptKey}), 1);
+    totalScore += r * w;
+    totalWeight += w;
+  });
+  return totalWeight > 0 ? totalScore / totalWeight : 0;
+}
+
+function avgRate(deptKey) {
+  const d = DEPTS[deptKey]; if(!d) return 0;
+  const rs = d.kpi.map(k => Math.min(rate({...k,_deptKey:deptKey}), 1));
+  return rs.reduce((a,b) => a+b, 0) / rs.length;
+}
+
+function totalWeightedScore() {
+  const scores = Object.keys(DEPTS).map(k => weightedScore(k));
+  return scores.reduce((a,b) => a+b, 0) / scores.length;
+}
+
+function getStatus(r) {
+  if (r >= .90) return { cls:'status-ok', label:'정상 ✅', color:'var(--green)' };
+  if (r >= .80) return { cls:'status-warn', label:'주의 ⚠️', color:'var(--amber)' };
+  return { cls:'status-danger', label:'경고 🔴', color:'var(--red)' };
+}
+
+function trendVsPrev(k) {
+  const actual = getActual(k);
+  const prev = k.prev !== undefined ? k.prev : k.actual;
+  if (prev === 0) return { dir: 'flat', pct: 0 };
+  const change = ((actual - prev) / Math.abs(prev)) * 100;
+  const isImproved = k.low ? actual < prev : actual > prev;
+  return { dir: isImproved ? 'up' : (actual === prev ? 'flat' : 'down'), pct: Math.abs(change).toFixed(1) };
+}
+
+function rcls(r) { return r>=.9?'rg':r>=.8?'rw':'rb'; }
+function rclr(r) { return r>=.9?'var(--green)':r>=.8?'var(--amber)':'var(--red)'; }
+function fv(k) {
+  const v = getActual(k);
+  if(k.isP) return (v*100).toFixed(1)+'%';
+  if(k.unit) return v.toLocaleString()+k.unit;
+  if(v>=100000000) return (v/100000000).toFixed(1)+'억';
+  if(v>=10000) return Math.round(v/10000).toLocaleString()+'만';
+  return v.toLocaleString();
+}
+function ft(k) {
+  const v=k.target;
+  if(k.isP) return (v*100).toFixed(1)+'%';
+  if(k.unit) return v.toLocaleString()+k.unit;
+  if(v>=100000000) return (v/100000000).toFixed(1)+'억';
+  if(v>=10000) return Math.round(v/10000).toLocaleString()+'만';
+  return v.toLocaleString();
+}
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  if(!t) return;
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ────────────────────────────────────────────────────────
+//  RENDER HELPERS
+// ────────────────────────────────────────────────────────
+function makeGauge(pct, color) {
+  const r=26, circ=2*Math.PI*r, dash=Math.min(pct,1)*circ;
+  return `<svg width="60" height="60" viewBox="0 0 60 60"><circle cx="30" cy="30" r="${r}" fill="none" stroke="var(--bg-4)" stroke-width="6"/><circle cx="30" cy="30" r="${r}" fill="none" stroke="${color}" stroke-width="6" stroke-dasharray="${dash} ${circ}" stroke-linecap="round" transform="rotate(-90 30 30)"/></svg>`;
+}
+
+function kpiTableHTML(items, deptKey) {
+  const weights = deptKey ? (KPI_WEIGHTS[deptKey] || {}) : {};
+  return `<div style="overflow-x:auto"><table class="kt">
+    <thead><tr>
+      <th>No</th><th>KPI 항목</th><th>가중치</th><th>목표</th><th>실적</th><th>달성률</th><th>전월대비</th><th>상태</th><th>코멘트</th>
+    </tr></thead>
+    <tbody>${items.map(k=>{
+      const kWithDept = {...k, _deptKey: deptKey};
+      const r=rate(kWithDept), c=rclr(r), pct=Math.min(r,1)*100;
+      const tv=trendVsPrev(k);
+      const catMap={result:'결과',activity:'활동',convert:'전환'};
+      const catHTML=k.cat?`<span class="cat cat-${k.cat}">${catMap[k.cat]||k.cat}</span>`:'';
+      const w=weights[k.item];
+      const wHTML=w?`<span class="weight-badge">${w}%</span>`:'<span style="color:var(--txt3);font-size:10px">—</span>';
+      const st=getStatus(r);
+      const periodKey = KPI_PERIODS[k.item] || 'monthly';
+      const pMap={monthly:'pb-monthly',quarterly:'pb-quarterly',yearly:'pb-yearly'};
+      const pLbl={monthly:'월',quarterly:'분기',yearly:'연'};
+      const period=`<span class="period-badge ${pMap[periodKey]}">${pLbl[periodKey]}</span>`;
+      return `<tr>
+        <td class="mono" style="color:var(--txt3)">${k.no}</td>
+        <td>${catHTML} ${period} ${k.item}</td>
+        <td>${wHTML}</td>
+        <td class="mono">${ft(k)}</td>
+        <td class="mono" style="color:${c};font-weight:700">${fv(kWithDept)}</td>
+        <td><div class="pw"><div class="pb"><div class="pf" style="width:${pct}%;background:${c}"></div></div><span class="pt" style="color:${c}">${(r*100).toFixed(0)}%</span></div></td>
+        <td><span class="tbadge ${tv.dir}">${tv.dir==='up'?'▲':tv.dir==='down'?'▼':'—'} ${tv.pct}%</span></td>
+        <td><span class="${st.cls}">${st.label}</span></td>
+        <td style="font-size:10px;color:var(--txt2);max-width:140px;line-height:1.4">${k.comment||''}</td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`;
+}
+
+function monthlyPlanHTML(items) {
+  return `<div class="plist">${items.map(p=>{
+    const stmap={완료:'pst-done',진행중:'pst-ing',예정:'pst-plan'};
+    return `<div class="pitem">
+      <div class="pitem-hdr">
+        <span class="pkpi">${p.kpi}</span>
+        <span class="pst ${stmap[p.status]||'pst-plan'}">${p.status}</span>
+        ${p.note?`<span style="font-size:10px;color:var(--txt3)">/ ${p.note}</span>`:''}
+      </div>
+      <div class="ptask">${p.task}</div>
+      <div class="pact">${p.action}</div>
+      <div class="pdue">📅 마감: ${p.due}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function weeklyActHTML(items, deptKey) {
+  return `<div class="alist">${items.map((a,i)=>`
+    <div class="aitem ${a.done?'done':''}" onclick="toggleDeptAction('${deptKey}',${i})">
+      <div class="achk">${a.done?'✓':''}</div>
+      <div class="abody">
+        <div class="akpi">🎯 ${a.kpi}</div>
+        <div class="atxt">${a.text}</div>
+        <div class="ares">✅ ${a.result}</div>
+        ${a.issue&&a.issue!=='없음'?`<div class="aiss">⚠️ ${a.issue}</div>`:''}
+        ${a.next?`<div class="anxt">→ ${a.next}</div>`:''}
+        <div class="aown">👤 ${a.owner}</div>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+function issueHTML(items) {
+  return `<div class="ilist">${items.map(i=>`
+    <div class="iitem">
+      <div class="idate">${i.date}</div>
+      <div class="iiss">⚠️ ${i.issue}</div>
+      <div class="irow">
+        <div class="icell"><div class="icell-lbl">원인</div>${i.cause}</div>
+        <div class="icell"><div class="icell-lbl">조치</div>${i.action}</div>
+        <div class="icell"><div class="icell-lbl">결과</div>${i.result}</div>
+        <div class="icell"><div class="icell-lbl">재발방지</div>${i.prevent}</div>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+
+// ────────────────────────────────────────────────────────
+//  KPI → 매출 연결 분석 (Requirement #8)
+// ────────────────────────────────────────────────────────
+const KPI_SALES_CHAIN = [
+  {
+    dept:'디자인', kpi:'작업 기한 준수율 / 체류시간',
+    arrow:'→', mid:'상세페이지 품질 향상',
+    arrow2:'→', result:'상세페이지 전환율 ↑',
+    arrow3:'→', impact:'매출 증가',
+    rate: 0.85, impact_pct:'+3%'
+  },
+  {
+    dept:'MD', kpi:'광고 ROAS / 행사 성사율',
+    arrow:'→', mid:'광고 효율 최적화',
+    arrow2:'→', result:'신규 고객 유입 ↑',
+    arrow3:'→', impact:'매출 증가',
+    rate: 0.80, impact_pct:'+12%'
+  },
+  {
+    dept:'원료영업', kpi:'신규 거래처 수 / 샘플→발주 전환율',
+    arrow:'→', mid:'거래처 네트워크 확대',
+    arrow2:'→', result:'원료 공급 다각화 + B2B 매출 ↑',
+    arrow3:'→', impact:'매출 증가',
+    rate: 0.60, impact_pct:'+8%'
+  },
+  {
+    dept:'생산기획', kpi:'신제품 리드타임 / 원가 절감율',
+    arrow:'→', mid:'출시 속도 단축 + 원가 절감',
+    arrow2:'→', result:'마진율 개선 + 시장 선점',
+    arrow3:'→', impact:'이익 증가',
+    rate: 0.75, impact_pct:'+5%'
+  },
+  {
+    dept:'CS발주', kpi:'CS 발생율 / 반품율',
+    arrow:'→', mid:'고객 만족도 향상',
+    arrow2:'→', result:'재구매율 ↑ / 부정 리뷰 감소',
+    arrow3:'→', impact:'매출 유지',
+    rate: 0.70, impact_pct:'-2% 방어'
+  },
+];
+
+function renderKpiSalesChain() {
+  const el = document.getElementById('kpiSalesChain');
+  if (!el) return;
+  el.innerHTML = KPI_SALES_CHAIN.map(chain => {
+    const c = rclr(chain.rate);
+    return `<div style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--bg-3);border-radius:8px;margin-bottom:6px;flex-wrap:wrap">
+      <div style="background:${DEPTS[chain.dept]?.color||'var(--blue)'}22;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;white-space:nowrap">${DEPTS[chain.dept]?.icon||''} ${chain.dept}</div>
+      <div style="font-size:10px;color:var(--txt2);flex:1;min-width:120px">${chain.kpi}</div>
+      <div style="color:var(--txt3);font-size:12px">→</div>
+      <div style="font-size:10px;color:var(--cyan);flex:1;min-width:100px">${chain.mid}</div>
+      <div style="color:var(--txt3);font-size:12px">→</div>
+      <div style="font-size:10px;color:var(--txt2);flex:1;min-width:100px">${chain.result}</div>
+      <div style="color:var(--txt3);font-size:12px">→</div>
+      <div style="font-size:11px;font-weight:700;color:${c};white-space:nowrap">${chain.impact} <span style="color:var(--green)">${chain.impact_pct}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ────────────────────────────────────────────────────────
+//  RENDER PAGES
+// ────────────────────────────────────────────────────────
+function renderDashboard() {
+  // 1. Alerts
+  const alerts = [];
+  Object.entries(DEPTS).forEach(([name, d]) => {
+    const r = avgRate(name);
+    const ws = weightedScore(name);
+    if (r < .70) alerts.push({type:'danger', ico:'🔴', t:`${name} — 달성률 ${(r*100).toFixed(0)}% / Score ${(ws*100).toFixed(0)}점`, desc:`최저 항목: ${d.kpi.reduce((a,b)=>rate(a)<rate(b)?a:b).item}`});
+    else if (r < .80) alerts.push({type:'warn', ico:'🟡', t:`${name} — 달성률 ${(r*100).toFixed(0)}% / Score ${(ws*100).toFixed(0)}점`, desc:'일부 KPI 목표 미달 — 추가 액션 필요'});
+  });
+  if (!alerts.length) alerts.push({type:'ok', ico:'✅', t:'모든 부서 KPI 정상', desc:'전 부서 달성률 80% 이상 유지 중'});
+  alerts.sort((a,b) => a.type==='danger'?-1:b.type==='danger'?1:0);
+  const alertEl = document.getElementById('alertList');
+  if (alertEl) alertEl.innerHTML = alerts.map(a=>`<div class="al ${a.type}"><div class="al-ico">${a.ico}</div><div><div class="al-t">${a.t}</div><div class="al-d">${a.desc}</div></div></div>`).join('');
+
+  // 2. Score Card
+  const total = totalWeightedScore();
+  const totalEl = document.getElementById('totalScore');
+  if (totalEl) {
+    totalEl.textContent = (total*100).toFixed(0) + '점';
+    totalEl.style.color = rclr(total);
+  }
+  const detailEl = document.getElementById('scoreDetail');
+  if (detailEl) {
+    detailEl.innerHTML = Object.entries(DEPTS).map(([name]) => {
+      const ws = weightedScore(name);
+      const st = getStatus(ws);
+      return `<span style="color:${st.color}">${DEPTS[name].icon}${name}: ${(ws*100).toFixed(0)}점</span>`;
+    }).join('  ');
+  }
+  const statusEl = document.getElementById('scoreStatus');
+  const st = getStatus(total);
+  if (statusEl) statusEl.innerHTML = `<span class="${st.cls}">${st.label}</span>`;
+
+  // Alert badge
+  const danger = alerts.filter(a=>a.type==='danger').length;
+  const warn = alerts.filter(a=>a.type==='warn').length;
+  const badgeEl = document.getElementById('alertBadge');
+  if (badgeEl && (danger||warn)) badgeEl.textContent = `⚠️ 경고 ${danger}건 주의 ${warn}건`;
+
+  // 3. Company KPI Cards
+  const kpiGridEl = document.getElementById('companyKpiGrid');
+  if (kpiGridEl) kpiGridEl.innerHTML = COMPANY_KPI.slice(0,5).map(k=>{
+    const r=rate(k), c=rclr(r);
+    return `<div class="kcard" style="--kc:${c}"><div class="klbl">${k.item}</div><div class="kval" style="color:${c}">${fv(k)}</div><div class="ksub">목표 ${ft(k)}</div><span class="krate ${rcls(r)}">${(r*100).toFixed(0)}%</span></div>`;
+  }).join('');
+
+  // 4. Gauge Grid
+  const gaugeEl = document.getElementById('gaugeGrid');
+  if (gaugeEl) gaugeEl.innerHTML = Object.entries(DEPTS).map(([name, d]) => {
+    const ws = weightedScore(name), c = rclr(ws);
+    return `<div class="gitem" onclick="switchPage('dept-${name}')" style="cursor:pointer"><div class="gcircle">${makeGauge(ws, c)}<div class="gpct" style="color:${c}">${(ws*100).toFixed(0)}</div></div><div class="gnm">${d.icon} ${name}</div></div>`;
+  }).join('');
+}
+
+  // 5. KPI→Sales Chain
+  renderKpiSalesChain();
+
+function renderCompany() {
+  const cw = document.getElementById('companyTableWrap');
+  const mw = document.getElementById('monthlyTableWrap');
+  if (cw) cw.innerHTML = kpiTableHTML(COMPANY_KPI, null);
+  if (mw) mw.innerHTML = kpiTableHTML(MONTHLY_KPI, null);
+}
+
+function renderKpiMaster() {
+  const filterDept = document.getElementById('masterFilterDept')?.value || '';
+  const filterType = document.getElementById('masterFilterType')?.value || '';
+  const filterPeriod = document.getElementById('masterFilterPeriod')?.value || '';
+
+  let rows = [];
+  let kpiId = 1;
+  Object.entries(DEPTS).forEach(([deptName, d]) => {
+    if (filterDept && deptName !== filterDept) return;
+    const weights = KPI_WEIGHTS[deptName] || {};
+    d.kpi.forEach(k => {
+      if (filterType && k.cat !== filterType) return;
+      const period = KPI_PERIODS[k.item] || 'monthly';
+      if (filterPeriod && period !== filterPeriod) return;
+      const periodLbl = {monthly:'월간',quarterly:'분기',yearly:'연간'}[period]||'월간';
+      const catLbl = {result:'Result',activity:'Activity',convert:'Convert'}[k.cat]||k.cat||'—';
+      const w = weights[k.item] || '—';
+      const unit = k.isP ? '%' : (k.unit || '수치');
+      rows.push({ id:`KPI-${String(kpiId++).padStart(3,'0')}`, dept:deptName, name:k.item, type:catLbl, period:periodLbl, target:ft(k), unit, owner:KPI_OWNERS[deptName]||deptName, weight:w, status:getStatus(rate(k)).label });
+    });
+  });
+
+  const el = document.getElementById('kpiMasterTable');
+  if (!el) return;
+  if (!rows.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--txt3)">데이터 없음</div>'; return; }
+
+  el.innerHTML = `<table class="master-table">
+    <thead><tr>
+      <th>KPI ID</th><th>부서</th><th>KPI명</th><th>유형</th><th>기간</th><th>목표값</th><th>단위</th><th>담당자</th><th>가중치</th><th>상태</th>
+    </tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td class="mono" style="color:var(--txt3);font-size:10px">${r.id}</td>
+      <td><strong>${r.dept}</strong></td>
+      <td>${r.name}</td>
+      <td><span class="cat cat-${r.type.toLowerCase()}">${r.type}</span></td>
+      <td><span class="period-badge ${r.period==='월간'?'pb-monthly':r.period==='분기'?'pb-quarterly':'pb-yearly'}">${r.period}</span></td>
+      <td class="mono">${r.target}</td>
+      <td style="color:var(--txt3)">${r.unit}</td>
+      <td>${r.owner}</td>
+      <td>${typeof r.weight==='number'?`<span class="weight-badge">${r.weight}%</span>`:r.weight}</td>
+      <td>${r.status}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+
+  // Populate dept filter
+  const filterEl = document.getElementById('masterFilterDept');
+  if (filterEl && filterEl.options.length <= 1) {
+    Object.keys(DEPTS).forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d; opt.textContent = d;
+      filterEl.appendChild(opt);
+    });
+  }
+}
+
+function renderDeptPage(deptName) {
+  const containerId = 'deptContent-' + deptName;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const d = DEPTS[deptName];
+  if (!d) return;
+
+  const ws = weightedScore(deptName);
+  const ar = avgRate(deptName);
+  const st = getStatus(ws);
+  const safeId = 'acc_' + deptName.replace(/[^a-zA-Z0-9]/g,'_');
+  const weeklyData = (STATE.depts[deptName] && STATE.depts[deptName].weekly)
+    ? STATE.depts[deptName].weekly : d.weekly;
+  const doneCount = weeklyData.filter(a=>a.done).length;
+  const execRate = weeklyData.length > 0 ? Math.round(doneCount/weeklyData.length*100) : 0;
+
+  // Score breakdown
+  const weights = KPI_WEIGHTS[deptName] || {};
+  const scoreBreakdown = d.kpi.map(k => {
+    const w = weights[k.item] || (100/d.kpi.length);
+    const r = Math.min(rate(k), 1);
+    return `${k.item}: ${(r*100).toFixed(0)}점 × ${Math.round(w)}%`;
+  }).join(' / ');
+
+  container.innerHTML = `
+    <div class="score-card" style="margin-bottom:12px">
+      <div>
+        <div class="score-lbl">KPI Score</div>
+        <div class="score-big" style="color:${st.color}">${(ws*100).toFixed(0)}</div>
+      </div>
+      <div class="score-info">
+        <div style="font-size:10px;color:var(--txt2)">${scoreBreakdown}</div>
+        <div style="margin-top:6px;font-size:12px;font-weight:700"><span class="${st.cls}">${st.label}</span></div>
+        <div style="font-size:10px;color:var(--txt3);margin-top:4px">실행률 ${execRate}% | 단순 달성률 ${(ar*100).toFixed(0)}%</div>
+      </div>
+    </div>
+    <div class="dacc">
+      <div class="dacc-hdr">
+        <div class="dico" style="background:${d.color}22">${d.icon}</div>
+        <div class="dnm">${deptName}${d.subtitle?` <span style="font-size:11px;color:var(--txt3)">(${d.subtitle})</span>`:''}</div>
+        <div>
+          <button class="btn btn-csv" onclick="downloadCSV('dept','${deptName}')" style="font-size:10px;padding:3px 7px">⬇ CSV</button>
+        </div>
+      </div>
+      <div class="dacc-body" id="${safeId}-body">
+        <div class="stabs">
+          <div class="stab active" onclick="switchStab('${safeId}','kpi',this)">📊 KPI</div>
+          <div class="stab" onclick="switchStab('${safeId}','plan',this)">📋 월간계획</div>
+          <div class="stab" onclick="switchStab('${safeId}','weekly',this)">✅ 주간점검</div>
+          <div class="stab" onclick="switchStab('${safeId}','issues',this)">🔧 개선기록</div>
+        </div>
+        <div class="stab-content active" id="${safeId}-kpi">${kpiTableHTML(d.kpi, deptName)}</div>
+        <div class="stab-content" id="${safeId}-plan">${monthlyPlanHTML(d.monthly)}</div>
+        <div class="stab-content" id="${safeId}-weekly">${weeklyActHTML(weeklyData, deptName)}</div>
+        <div class="stab-content" id="${safeId}-issues">${issueHTML(d.issues)}</div>
+      </div>
+    </div>`;
+}
+
+function renderWeekly() {
+  const actions = STATE.weeklyActions || [];
+  const listEl = document.getElementById('actionList');
+  if (listEl) listEl.innerHTML = actions.map((a,i)=>`
+    <div class="aitem ${a.done?'done':''}" onclick="toggleAction(${i})">
+      <div class="achk">${a.done?'✓':''}</div>
+      <div class="abody">
+        <div class="akpi">🎯 ${a.kpi}</div>
+        <div class="atxt">${a.text}</div>
+        <div class="ares">✅ ${a.result}</div>
+        ${a.issue&&a.issue!=='없음'?`<div class="aiss">⚠️ ${a.issue}</div>`:''}
+        ${a.next?`<div class="anxt">→ ${a.next}</div>`:''}
+        <div class="aown">👤 ${a.owner}</div>
+      </div>
+    </div>`).join('');
+
+  const colors={good:'var(--green)',bad:'var(--red)',next:'var(--blue)'};
+  const icons={good:'✅',bad:'❌',next:'🎯'};
+  const evalEl = document.getElementById('weeklyEval');
+  if (evalEl) evalEl.innerHTML = WEEKLY_EVAL.map(e=>`
+    <div style="padding:10px 12px;background:var(--bg-3);border-radius:8px;border-left:3px solid ${colors[e.type]}">
+      <div style="font-size:11px;font-weight:700;color:${colors[e.type]};margin-bottom:5px">${icons[e.type]} ${e.label}</div>
+      <div style="font-size:12px;line-height:1.6;color:var(--txt2)">${e.text}</div>
+    </div>`).join('');
+}
+
+function renderAll() {
+  try { renderDashboard(); } catch(e) { console.error('renderDashboard error:', e); }
+  try { renderCompany(); } catch(e) { console.error('renderCompany error:', e); }
+  try { renderKpiMaster(); } catch(e) { console.error('renderKpiMaster error:', e); }
+  Object.keys(DEPTS).forEach(name => {
+    try { renderDeptPage(name); } catch(e) { console.error('renderDeptPage error for', name, e); }
+  });
+  try { renderWeekly(); } catch(e) { console.error('renderWeekly error:', e); }
+}
+
+// ────────────────────────────────────────────────────────
+//  CSV DOWNLOAD
+// ────────────────────────────────────────────────────────
+function csvEscape(v) {
+  if (v === null || v === undefined) return '';
+  const s = String(v);
+  return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s;
+}
+function csvRow(arr) { return arr.map(csvEscape).join(','); }
+function downloadBlob(content, filename) {
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  showToast(`📥 ${filename} 다운로드 완료`);
+}
+
+function downloadCSV(type, deptArg) {
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+
+  if (type === 'all_kpi' || type === 'dept') {
+    const header = ['KPI ID','부서','KPI명','유형','기간','목표값','실적','달성률(%)','가중치(%)','KPI Score','전월실적','전월대비','상태','담당자','코멘트'];
+    const rows = [csvRow(header)];
+    let kpiId = 1;
+    const depts = deptArg ? { [deptArg]: DEPTS[deptArg] } : DEPTS;
+    Object.entries(depts).forEach(([deptName, d]) => {
+      const weights = KPI_WEIGHTS[deptName] || {};
+      d.kpi.forEach(k => {
+        const r = rate(k);
+        const w = weights[k.item] || (100/d.kpi.length);
+        const tv = trendVsPrev(k);
+        const period = {monthly:'월간',quarterly:'분기',yearly:'연간'}[KPI_PERIODS[k.item]||'monthly'];
+        const catLbl = {result:'Result',activity:'Activity',convert:'Convert'}[k.cat]||k.cat||'';
+        rows.push(csvRow([
+          `KPI-${String(kpiId++).padStart(3,'0')}`, deptName, k.item, catLbl, period,
+          ft(k), fv(k), (r*100).toFixed(1), Math.round(w), (Math.min(r,1)*w).toFixed(1),
+          k.prev !== undefined ? k.prev : '',
+          `${tv.dir==='up'?'▲':tv.dir==='down'?'▼':'—'} ${tv.pct}%`,
+          getStatus(r).label.replace(/[✅⚠️🔴]/g,'').trim(),
+          KPI_OWNERS[deptName]||deptName, k.comment||''
+        ]));
+      });
+    });
+    downloadBlob(rows.join('\n'), deptArg ? `KPI_${deptArg}_${dateStr}.csv` : `B2S_KPI_전체_${dateStr}.csv`);
+
+  } else if (type === 'master') {
+    const header = ['KPI ID','부서','KPI명','유형','KPI 정의','측정 방법','목표값','단위','담당자','가중치(%)','적용기간'];
+    const rows = [csvRow(header)];
+    let kpiId = 1;
+    Object.entries(DEPTS).forEach(([deptName, d]) => {
+      const weights = KPI_WEIGHTS[deptName] || {};
+      d.kpi.forEach(k => {
+        const w = weights[k.item] || '—';
+        const unit = k.isP ? '%' : (k.unit || '수치');
+        const period = {monthly:'월간',quarterly:'분기',yearly:'연간'}[KPI_PERIODS[k.item]||'monthly'];
+        const catLbl = {result:'Result',activity:'Activity',convert:'Convert'}[k.cat]||k.cat||'';
+        rows.push(csvRow([
+          `KPI-${String(kpiId++).padStart(3,'0')}`, deptName, k.item, catLbl,
+          k.comment||'', '실적/목표 비율 측정', ft(k), unit,
+          KPI_OWNERS[deptName]||deptName, typeof w === 'number' ? w : '', period
+        ]));
+      });
+    });
+    downloadBlob(rows.join('\n'), `B2S_KPI_Master_${dateStr}.csv`);
+
+  } else if (type === 'weekly') {
+    const header = ['순번','KPI','실행 내용','결과','발생 문제','다음 조치','담당자','완료 여부'];
+    const rows = [csvRow(header)];
+    (STATE.weeklyActions||[]).forEach((a,i) => {
+      rows.push(csvRow([i+1, a.kpi, a.text, a.result, a.issue||'없음', a.next||'', a.owner, a.done?'완료':'미완료']));
+    });
+    downloadBlob(rows.join('\n'), `B2S_주간점검_${dateStr}.csv`);
+
+  } else if (type === 'monthly') {
+    const header = ['순번','부서','KPI','업무','액션','마감일','상태','비고'];
+    const rows = [csvRow(header)];
+    Object.entries(DEPTS).forEach(([deptName, d]) => {
+      d.monthly.forEach((p,i) => {
+        rows.push(csvRow([i+1, deptName, p.kpi, p.task, p.action, p.due, p.status, p.note||'']));
+      });
+    });
+    downloadBlob(rows.join('\n'), `B2S_월간계획_${dateStr}.csv`);
+
+  } else if (type === 'issues') {
+    const header = ['날짜','부서','이슈','원인','조치','결과','재발방지'];
+    const rows = [csvRow(header)];
+    Object.entries(DEPTS).forEach(([deptName, d]) => {
+      d.issues.forEach(i => {
+        rows.push(csvRow([i.date, deptName, i.issue, i.cause, i.action, i.result, i.prevent]));
+      });
+    });
+    downloadBlob(rows.join('\n'), `B2S_개선기록_${dateStr}.csv`);
+
+  } else if (type === 'score') {
+    const header = ['부서','단순 달성률(%)','가중치 Score(점)','상태','경고 KPI 수'];
+    const rows = [csvRow(header)];
+    Object.entries(DEPTS).forEach(([name, d]) => {
+      const ar = avgRate(name), ws = weightedScore(name);
+      const dangerKpis = d.kpi.filter(k => rate(k) < .80).length;
+      rows.push(csvRow([name, (ar*100).toFixed(1), (ws*100).toFixed(1), getStatus(ws).label.replace(/[✅⚠️🔴]/g,'').trim(), dangerKpis]));
+    });
+    downloadBlob(rows.join('\n'), `B2S_KPI_Score_${dateStr}.csv`);
+  }
+  closeCsvModal();
+}
+
+// ────────────────────────────────────────────────────────
+//  INTERACTIONS
+// ────────────────────────────────────────────────────────
+function switchStab(accId, tabId, el) {
+  const body = document.getElementById(accId+'-body');
+  if (!body) return;
+  body.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
+  body.querySelectorAll('.stab-content').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const target = document.getElementById(accId+'-'+tabId);
+  if (target) target.classList.add('active');
+}
+
+function toggleAction(i) {
+  if (!STATE.weeklyActions[i]) return;
+  STATE.weeklyActions[i].done = !STATE.weeklyActions[i].done;
+  saveState();
+  const done = STATE.weeklyActions.filter(a=>a.done).length;
+  const total = STATE.weeklyActions.length;
+  showToast(`실행률 ${done}/${total} (${Math.round(done/total*100)}%)`);
+  renderWeekly();
+  syncToFirebase();
+}
+
+function toggleDeptAction(deptKey, i) {
+  if (!DEPTS[deptKey]) return;
+  if (!STATE.depts[deptKey]) STATE.depts[deptKey] = { weekly: [...DEPTS[deptKey].weekly.map(a=>({...a}))] };
+  if (!STATE.depts[deptKey].weekly[i]) return;
+  STATE.depts[deptKey].weekly[i].done = !STATE.depts[deptKey].weekly[i].done;
+  saveState();
+  const items = STATE.depts[deptKey].weekly;
+  const done = items.filter(a=>a.done).length;
+  showToast(`${deptKey} 실행률 ${done}/${items.length} (${Math.round(done/items.length*100)}%)`);
+  renderDeptPage(deptKey);
+  syncToFirebase();
+}
+
+function setPeriod(p, el) {
+  currentPeriod = p;
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// Input page
+const deptSelectEl = document.getElementById('deptSelect');
+if (deptSelectEl) deptSelectEl.addEventListener('change', function() {
+  const deptName = this.value;
+  // Map display name to dept key
+  const key = deptName.includes('(카므란)') ? '무역1' : deptName.includes('(이리)') ? '무역2' : deptName;
+  const d = DEPTS[key] || DEPTS[deptName];
+  const c = document.getElementById('kpiInputFields');
+  if (!c) return;
+  if (!d) { c.innerHTML = ''; return; }
+  c.innerHTML = d.kpi.map((k,i)=>`
+    <div class="fg">
+      <label class="fl">${k.no}. ${k.item} <span style="color:var(--txt3)">(목표: ${ft(k)})</span></label>
+      <input type="number" class="fc" id="inp_${i}" placeholder="실적 입력" step="any" value="${getActual(k)}">
+    </div>`).join('');
+});
+
+// Set default month
+(function() {
+  const el = document.getElementById('inputMonth');
+  if (el) {
+    const now = new Date();
+    el.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
+  const badge = document.getElementById('monthBadge');
+  if (badge) {
+    const now = new Date();
+    badge.textContent = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
+})();
+
+function saveInput() {
+  const dn = document.getElementById('deptSelect')?.value;
+  if (!dn) { showToast('⚠️ 부서를 선택하세요'); return; }
+  const key = dn.includes('(카므란)') ? '무역1' : dn.includes('(이리)') ? '무역2' : dn;
+  const d = DEPTS[key] || DEPTS[dn];
+  if (!d) { showToast('⚠️ 부서를 찾을 수 없습니다'); return; }
+  if (!STATE.kpiOverrides) STATE.kpiOverrides = {};
+  d.kpi.forEach((k, i) => {
+    const el = document.getElementById('inp_'+i);
+    if (el && el.value !== '') {
+      const val = parseFloat(el.value);
+      if (!isNaN(val)) {
+        STATE.kpiOverrides[`${key}__${k.item}`] = val;
+      }
+    }
+  });
+  saveState();
+  renderAll();
+  showToast(`✅ ${key} 실적이 저장되었습니다`);
+  syncToFirebase();
+}
+
+function clearInput() {
+  const deptEl = document.getElementById('deptSelect');
+  const mgrEl = document.getElementById('inputManager');
+  const fieldsEl = document.getElementById('kpiInputFields');
+  if (deptEl) deptEl.value = '';
+  if (mgrEl) mgrEl.value = '';
+  if (fieldsEl) fieldsEl.innerHTML = '';
+}
+
+function addAction() {
+  const kpi = document.getElementById('aKpi')?.value.trim();
+  const text = document.getElementById('aTxt')?.value.trim();
+  if (!kpi || !text) { showToast('⚠️ KPI와 실행 내용을 입력하세요'); return; }
+  STATE.weeklyActions.push({
+    kpi, text,
+    result: document.getElementById('aRes')?.value.trim() || '',
+    issue: document.getElementById('aIss')?.value.trim() || '없음',
+    next: document.getElementById('aNxt')?.value.trim() || '',
+    owner: document.getElementById('aOwner')?.value.trim() || '',
+    done: false
+  });
+  saveState();
+  ['aKpi','aTxt','aRes','aIss','aNxt','aOwner'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  showToast('✅ 액션이 추가되었습니다');
+  switchPage('weekly');
+  syncToFirebase();
+}
+
+// CSV Modal
+function showCsvModal() { document.getElementById('csvModal').classList.add('show'); }
+function closeCsvModal() { document.getElementById('csvModal').classList.remove('show'); }
+document.getElementById('csvModal').addEventListener('click', function(e) { if(e.target===this) closeCsvModal(); });
+
+// Navigation
+function switchPage(pageId) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('[data-page]').forEach(t=>t.classList.remove('active'));
+  const pg = document.getElementById('page-'+pageId);
+  if (pg) pg.classList.add('active');
+  document.querySelectorAll(`[data-page="${pageId}"]`).forEach(t=>t.classList.add('active'));
+  // Scroll to top
+  const content = document.querySelector('.content');
+  if (content) content.scrollTop = 0;
+}
+document.querySelectorAll('[data-page]').forEach(el => {
+  el.addEventListener('click', () => switchPage(el.dataset.page));
+});
+
+// ════════════════════════════════════════════════════════
+//  PWA 설치 우선 시스템
+//  - 링크 열 때마다 미설치 상태면 전체화면 팝업
+//  - 스킵해도 다음 오픈 시 다시 팝업 (세션 기반)
+//  - iOS Safari 수동 안내 지원
+//  - 이미 설치됨 → 팝업 없이 바로 실행
+// ════════════════════════════════════════════════════════
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+
+let deferredPrompt = null;
+const PWA_INSTALLED_KEY = 'b2s_pwa_installed';
+const PWA_SESSION_KEY   = 'b2s_pwa_session';   // sessionStorage: 이번 탭에서 이미 팝업 봤는지
+
+// 기기/환경 감지
+const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches
+  || window.navigator.standalone === true;
+
+function isInstalled() {
+  return isInStandaloneMode || localStorage.getItem(PWA_INSTALLED_KEY) === 'true';
+}
+
+function showPwaOverlay() {
+  const overlay = document.getElementById('pwaOverlay');
+  if (!overlay) return;
+  // iOS vs Android/Desktop 분기
+  if (isIos) {
+    document.getElementById('pwaInstallAuto').style.display = 'none';
+    document.getElementById('pwaInstallIos').style.display  = 'block';
+  } else {
+    document.getElementById('pwaInstallAuto').style.display = 'block';
+    document.getElementById('pwaInstallIos').style.display  = 'none';
+  }
+  overlay.classList.add('show');
+  // 이번 세션에서 팝업 봤다고 기록 (탭 닫으면 초기화)
+  try { sessionStorage.setItem(PWA_SESSION_KEY, '1'); } catch(e) {}
+}
+
+function closePwaOverlay(confirmed) {
+  const overlay = document.getElementById('pwaOverlay');
+  if (overlay) overlay.classList.remove('show');
+  if (confirmed) {
+    // 설치 완료 → 다시 묻지 않음
+    try { localStorage.setItem(PWA_INSTALLED_KEY, 'true'); } catch(e) {}
+    showToast('📲 앱이 설치되었습니다!');
+  }
+  // confirmed=false(스킵): localStorage에 저장 안 함
+  // → 다음 링크 오픈(새 세션)에서 다시 팝업
+}
+
+// ── Android/Desktop: 브라우저 자동 설치 프롬프트 ──
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // 헤더 설치 버튼도 활성화
+  const btn = document.getElementById('installBtn');
+  if (btn) btn.classList.add('show');
+});
+
+// 설치 완료 이벤트 감지
+window.addEventListener('appinstalled', () => {
+  try { localStorage.setItem(PWA_INSTALLED_KEY, 'true'); } catch(e) {}
+  closePwaOverlay(true);
+  deferredPrompt = null;
+  const btn = document.getElementById('installBtn');
+  if (btn) btn.classList.remove('show');
+});
+
+// ── 설치 버튼 클릭 (Android/Desktop) ──
+const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+if (pwaInstallBtn) pwaInstallBtn.addEventListener('click', async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') closePwaOverlay(true);
+    else closePwaOverlay(false);
+    deferredPrompt = null;
+  } else {
+    // deferredPrompt 없는 경우(이미 설치됐거나 지원 안함)
+    closePwaOverlay(true);
+  }
+});
+
+// ── 스킵 버튼 (세션 기반 — 다음 링크 오픈 시 다시 팝업) ──
+const pwaSkipBtn = document.getElementById('pwaSkipBtn');
+if (pwaSkipBtn) pwaSkipBtn.addEventListener('click', () => closePwaOverlay(false));
+
+const pwaIosSkipBtn = document.getElementById('pwaIosSkipBtn');
+if (pwaIosSkipBtn) pwaIosSkipBtn.addEventListener('click', () => closePwaOverlay(false));
+
+// ── 헤더 설치 버튼 ──
+const installBtn = document.getElementById('installBtn');
+if (installBtn) installBtn.addEventListener('click', async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') { showToast('📲 앱이 설치되었습니다!'); localStorage.setItem(PWA_INSTALLED_KEY, 'true'); }
+    deferredPrompt = null;
+    installBtn.classList.remove('show');
+  }
+});
+
+// ── 팝업 표시 조건 판단 ──
+// 이미 설치됨 → 팝업 없음
+// 이번 세션에서 이미 팝업 봤음(스킵 포함) → 팝업 없음
+// 그 외 → 팝업 표시
+function initPwaPrompt() {
+  if (isInstalled()) return; // 이미 설치됨
+  const seenThisSession = sessionStorage.getItem(PWA_SESSION_KEY) === '1';
+  if (seenThisSession) return; // 이번 탭에서 이미 봤음
+  // 잠깐 딜레이 후 팝업 (UI 먼저 로드)
+  setTimeout(showPwaOverlay, 800);
+}
+
+// INIT
+window.appInit = function() {
+  renderAll();
+  setupRealtimeSync();
+  initPwaPrompt();
+};
+
+// Firebase module이 로드되기 전에 DOMContentLoaded가 먼저 올 수 있으므로 직접 실행
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(renderAll, 50);
+    setTimeout(initPwaPrompt, 900);
+  });
+} else {
+  setTimeout(renderAll, 50);
+  setTimeout(initPwaPrompt, 900);
+}
+</script>
+</body>
+</html>
