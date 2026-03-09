@@ -4089,6 +4089,13 @@ _fbAuth.onAuthStateChanged(async function(user) {
 
 
 
+
+
+
+
+
+
+
 const DEPT_OWNERS = {
   '회계':     '정보라',
   '무역1':    '카므란',
@@ -4748,36 +4755,351 @@ function kpiTableHTML(items, deptKey) {
     }).join('')}</tbody></table></div>`;
 }
 
-function monthlyPlanHTML(items) {
-  return `<div class="plist">${items.map(p=>{
-    const stmap={완료:'pst-done',진행중:'pst-ing',예정:'pst-plan'};
-    return `<div class="pitem">
-      <div class="pitem-hdr">
-        <span class="pkpi">${p.kpi}</span>
-        <span class="pst ${stmap[p.status]||'pst-plan'}">${p.status}</span>
-        ${p.note?`<span style="font-size:10px;color:var(--txt3)">/ ${p.note}</span>`:''}
-      </div>
-      <div class="ptask">${p.task}</div>
-      <div class="pact">${p.action}</div>
-      <div class="pdue">📅 마감: ${p.due}</div>
-    </div>`;
-  }).join('')}</div>`;
+
+// ═══════════════════════════════════════════════════════════════
+//  월간계획 - 작성/수정/저장 기능
+// ═══════════════════════════════════════════════════════════════
+
+function monthlyPlanHTML(items, deptName) {
+  var safeId = 'acc_' + deptName.replace(/[^a-zA-Z0-9]/g,'_');
+  var d = DEPTS[deptName];
+  var kpiOpts = d ? d.kpi.map(function(k){ return '<option value="'+k.item+'">'+k.item+'</option>'; }).join('') : '';
+  var statusOpts = ['예정','진행중','완료'].map(function(s){ return '<option value="'+s+'">'+s+'</option>'; }).join('');
+
+  // 저장된 데이터 우선, 없으면 DEPTS 샘플
+  var plans = (STATE.depts[deptName] && STATE.depts[deptName].monthly) ? STATE.depts[deptName].monthly : items;
+
+  var listHTML = plans.length ? plans.map(function(p, i) {
+    var stmap = {완료:'pst-done', 진행중:'pst-ing', 예정:'pst-plan'};
+    return '<div class="pitem" id="mplan-item-'+safeId+'-'+i+'">'
+      + '<div class="pitem-hdr">'
+      + '<span class="pkpi">'+p.kpi+'</span>'
+      + '<span class="pst '+(stmap[p.status]||'pst-plan')+'">'+p.status+'</span>'
+      + (p.due ? '<span style="font-size:10px;color:var(--txt3)">📅 '+p.due+'</span>' : '')
+      + '</div>'
+      + '<div class="ptask">📋 '+p.task+'</div>'
+      + '<div class="pact">▶ '+p.action+'</div>'
+      + (p.note ? '<div style="font-size:10px;color:var(--txt3);margin-top:3px">📝 '+p.note+'</div>' : '')
+      + '<div class="mplan-btns" style="display:flex;gap:6px;margin-top:6px">'
+      + '<button class="btn" style="font-size:10px;padding:2px 8px;background:var(--bg-3);color:var(--txt2)" onclick="editMonthlyPlan(\''+deptName+'\','+i+')">✏️ 수정</button>'
+      + '<button class="btn" style="font-size:10px;padding:2px 8px;background:rgba(239,83,80,.1);color:var(--red)" onclick="deleteMonthlyPlan(\''+deptName+'\','+i+')">🗑️ 삭제</button>'
+      + '<select class="fc" style="font-size:10px;padding:2px 6px;height:24px;width:80px" onchange="updateMonthlyStatus(\''+deptName+'\','+i+',this.value)">'
+      + ['예정','진행중','완료'].map(function(s){ return '<option value="'+s+'"'+(p.status===s?' selected':'')+'>'+s+'</option>'; }).join('')
+      + '</select>'
+      + '</div>'
+      + '</div>';
+  }).join('') : '<div style="font-size:12px;color:var(--txt3);text-align:center;padding:20px">등록된 월간계획이 없습니다</div>';
+
+  return '<div class="plan-wrap" style="padding:4px 0">'
+    // 헤더
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--txt1)">📋 '+deptName+' 월간계획</div>'
+    + '<button class="btn btn-p" style="font-size:11px;padding:5px 12px" onclick="openMonthlyForm(\''+deptName+'\')" id="mplan-add-btn-'+safeId+'">+ 계획 추가</button>'
+    + '</div>'
+    // 입력 폼 (기본 hidden)
+    + '<div id="mplan-form-'+safeId+'" style="display:none;background:var(--bg-2);border:1px solid var(--bdr);border-radius:10px;padding:14px;margin-bottom:12px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--txt1);margin-bottom:10px" id="mplan-form-title-'+safeId+'">📋 월간계획 추가</div>'
+    + '<input type="hidden" id="mplan-edit-idx-'+safeId+'" value="-1">'
+    + '<div class="frow">'
+    + '<div class="fg"><label class="fl">연결 KPI <span style="color:var(--red)">*</span></label>'
+    + '<select id="mplan-kpi-'+safeId+'" class="fc"><option value="">선택</option>'+kpiOpts+'</select></div>'
+    + '<div class="fg"><label class="fl">상태</label>'
+    + '<select id="mplan-status-'+safeId+'" class="fc">'+statusOpts+'</select></div>'
+    + '</div>'
+    + '<div class="fg" style="margin-top:8px"><label class="fl">과제/목표 <span style="color:var(--red)">*</span></label>'
+    + '<input id="mplan-task-'+safeId+'" class="fc" type="text" placeholder="이번 달 달성할 과제를 입력하세요"></div>'
+    + '<div class="fg" style="margin-top:8px"><label class="fl">실행 액션</label>'
+    + '<input id="mplan-action-'+safeId+'" class="fc" type="text" placeholder="구체적인 실행 방법"></div>'
+    + '<div class="frow" style="margin-top:8px">'
+    + '<div class="fg"><label class="fl">📅 마감일</label>'
+    + '<input id="mplan-due-'+safeId+'" class="fc" type="date"></div>'
+    + '<div class="fg"><label class="fl">메모</label>'
+    + '<input id="mplan-note-'+safeId+'" class="fc" type="text" placeholder="추가 메모 (선택)"></div>'
+    + '</div>'
+    + '<div class="btn-row" style="margin-top:10px">'
+    + '<button class="btn btn-p" onclick="saveMonthlyPlan(\''+deptName+'\')">💾 저장</button>'
+    + '<button class="btn" style="background:var(--bg-3);color:var(--txt2)" onclick="closeMonthlyForm(\''+safeId+'\')">✕ 취소</button>'
+    + '</div>'
+    + '</div>'
+    // 리스트
+    + '<div id="mplan-list-'+safeId+'">'
+    + listHTML
+    + '</div>'
+    + '</div>';
 }
 
-function weeklyActHTML(items, deptKey) {
-  return `<div class="alist">${items.map((a,i)=>`
-    <div class="aitem ${a.done?'done':''}" onclick="toggleDeptAction('${deptKey}',${i})">
-      <div class="achk">${a.done?'✓':''}</div>
-      <div class="abody">
-        <div class="akpi">🎯 ${a.kpi}</div>
-        <div class="atxt">${a.text}</div>
-        <div class="ares">✅ ${a.result}</div>
-        ${a.issue&&a.issue!=='없음'?`<div class="aiss">⚠️ ${a.issue}</div>`:''}
-        ${a.next?`<div class="anxt">→ ${a.next}</div>`:''}
-        <div class="aown">👤 ${a.owner}</div>
-      </div>
-    </div>`).join('')}</div>`;
+function openMonthlyForm(deptName) {
+  var safeId = 'acc_' + deptName.replace(/[^a-zA-Z0-9]/g,'_');
+  var form = document.getElementById('mplan-form-'+safeId);
+  if (form) { form.style.display = 'block'; }
 }
+
+function closeMonthlyForm(safeId) {
+  var form = document.getElementById('mplan-form-'+safeId);
+  if (form) { form.style.display = 'none'; }
+  var idxEl = document.getElementById('mplan-edit-idx-'+safeId);
+  if (idxEl) idxEl.value = '-1';
+  ['mplan-kpi-','mplan-task-','mplan-action-','mplan-due-','mplan-note-'].forEach(function(p){
+    var el = document.getElementById(p+safeId);
+    if (el) el.value = '';
+  });
+  var statusEl = document.getElementById('mplan-status-'+safeId);
+  if (statusEl) statusEl.value = '예정';
+  var titleEl = document.getElementById('mplan-form-title-'+safeId);
+  if (titleEl) titleEl.textContent = '📋 월간계획 추가';
+}
+
+function saveMonthlyPlan(deptName) {
+  var safeId = 'acc_' + deptName.replace(/[^a-zA-Z0-9]/g,'_');
+  var kpi    = (document.getElementById('mplan-kpi-'+safeId)||{value:''}).value;
+  var task   = ((document.getElementById('mplan-task-'+safeId)||{value:''}).value||'').trim();
+  var action = ((document.getElementById('mplan-action-'+safeId)||{value:''}).value||'').trim();
+  var due    = (document.getElementById('mplan-due-'+safeId)||{value:''}).value;
+  var note   = ((document.getElementById('mplan-note-'+safeId)||{value:''}).value||'').trim();
+  var status = (document.getElementById('mplan-status-'+safeId)||{value:'예정'}).value || '예정';
+  var editIdx = parseInt((document.getElementById('mplan-edit-idx-'+safeId)||{value:'-1'}).value);
+
+  if (!task) { showToast('❗ 과제/목표를 입력해주세요'); return; }
+
+  if (!STATE.depts[deptName]) STATE.depts[deptName] = {};
+  if (!STATE.depts[deptName].monthly) {
+    STATE.depts[deptName].monthly = (DEPTS[deptName]&&DEPTS[deptName].monthly) ? JSON.parse(JSON.stringify(DEPTS[deptName].monthly)) : [];
+  }
+
+  var plan = { kpi:kpi, task:task, action:action, due:due, note:note, status:status, no: Date.now() };
+
+  if (editIdx >= 0) {
+    STATE.depts[deptName].monthly[editIdx] = plan;
+    showToast('✅ 월간계획이 수정되었습니다');
+  } else {
+    STATE.depts[deptName].monthly.push(plan);
+    showToast('✅ 월간계획이 추가되었습니다');
+  }
+
+  saveState();
+  try { syncToFirebase(); } catch(e) {}
+  closeMonthlyForm(safeId);
+  renderDeptPage(deptName);
+}
+
+function editMonthlyPlan(deptName, idx) {
+  var safeId = 'acc_' + deptName.replace(/[^a-zA-Z0-9]/g,'_');
+  var plans = (STATE.depts[deptName]&&STATE.depts[deptName].monthly) ? STATE.depts[deptName].monthly
+             : (DEPTS[deptName]&&DEPTS[deptName].monthly ? DEPTS[deptName].monthly : []);
+  var p = plans[idx];
+  if (!p) return;
+
+  var set = function(id, val){ var el=document.getElementById(id+safeId); if(el) el.value=val||''; };
+  set('mplan-kpi-', p.kpi);
+  set('mplan-task-', p.task);
+  set('mplan-action-', p.action);
+  set('mplan-due-', p.due);
+  set('mplan-note-', p.note);
+  set('mplan-status-', p.status);
+
+  var idxEl = document.getElementById('mplan-edit-idx-'+safeId);
+  if (idxEl) idxEl.value = idx;
+
+  var titleEl = document.getElementById('mplan-form-title-'+safeId);
+  if (titleEl) titleEl.textContent = '✏️ 월간계획 수정 ('+(idx+1)+'번)';
+
+  openMonthlyForm(deptName);
+}
+
+function deleteMonthlyPlan(deptName, idx) {
+  if (!confirm('이 월간계획을 삭제하시겠습니까?')) return;
+  if (!STATE.depts[deptName]) STATE.depts[deptName] = {};
+  if (!STATE.depts[deptName].monthly) {
+    STATE.depts[deptName].monthly = (DEPTS[deptName]&&DEPTS[deptName].monthly) ? JSON.parse(JSON.stringify(DEPTS[deptName].monthly)) : [];
+  }
+  STATE.depts[deptName].monthly.splice(idx, 1);
+  saveState();
+  try { syncToFirebase(); } catch(e) {}
+  showToast('🗑️ 삭제되었습니다');
+  renderDeptPage(deptName);
+}
+
+function updateMonthlyStatus(deptName, idx, status) {
+  if (!STATE.depts[deptName]) STATE.depts[deptName] = {};
+  if (!STATE.depts[deptName].monthly) {
+    STATE.depts[deptName].monthly = (DEPTS[deptName]&&DEPTS[deptName].monthly) ? JSON.parse(JSON.stringify(DEPTS[deptName].monthly)) : [];
+  }
+  if (STATE.depts[deptName].monthly[idx]) {
+    STATE.depts[deptName].monthly[idx].status = status;
+    saveState();
+    try { syncToFirebase(); } catch(e) {}
+    showToast('✅ 상태가 변경되었습니다: ' + status);
+    renderDeptPage(deptName);
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+//  주간점검 - 작성/수정/저장 기능
+// ═══════════════════════════════════════════════════════════════
+
+function weeklyActHTML(items, deptKey) {
+  var safeId = 'acc_' + deptKey.replace(/[^a-zA-Z0-9]/g,'_');
+  var d = DEPTS[deptKey];
+  var kpiOpts = d ? d.kpi.map(function(k){ return '<option value="'+k.item+'">'+k.item+'</option>'; }).join('') : '';
+
+  // 저장된 데이터 우선
+  var actions = (STATE.depts[deptKey]&&STATE.depts[deptKey].weekly) ? STATE.depts[deptKey].weekly : items;
+
+  var doneCount = actions.filter(function(a){ return a.done; }).length;
+  var pct = actions.length ? Math.round(doneCount/actions.length*100) : 0;
+
+  var listHTML = actions.length ? actions.map(function(a, i) {
+    return '<div class="aitem '+(a.done?'done':'')+'" id="wact-item-'+safeId+'-'+i+'">'
+      + '<div class="achk" onclick="toggleDeptAction(\''+deptKey+'\','+i+')" style="cursor:pointer">'+(a.done?'✓':'')+'</div>'
+      + '<div class="abody">'
+      + '<div class="akpi">🎯 '+(a.kpi||'')+'</div>'
+      + '<div class="atxt">'+(a.text||a.task||'')+'</div>'
+      + (a.result ? '<div class="ares">✅ '+a.result+'</div>' : '')
+      + (a.issue&&a.issue!=='없음' ? '<div class="aiss">⚠️ '+a.issue+'</div>' : '')
+      + (a.next ? '<div class="anxt">🔜 '+a.next+'</div>' : '')
+      + '<div class="aown">👤 '+(a.owner||'')+'</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:5px;margin-top:6px;flex-shrink:0">'
+      + '<button class="btn" style="font-size:10px;padding:2px 7px;background:var(--bg-3);color:var(--txt2)" onclick="editWeeklyAct(\''+deptKey+'\','+i+')">✏️</button>'
+      + '<button class="btn" style="font-size:10px;padding:2px 7px;background:rgba(239,83,80,.1);color:var(--red)" onclick="deleteWeeklyAct(\''+deptKey+'\','+i+')">🗑️</button>'
+      + '</div>'
+      + '</div>';
+  }).join('') : '<div style="font-size:12px;color:var(--txt3);text-align:center;padding:20px">등록된 주간 액션이 없습니다</div>';
+
+  return '<div class="plan-wrap" style="padding:4px 0">'
+    // 헤더 + 진행률
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--txt1)">✅ '+deptKey+' 주간점검'
+    + (actions.length ? ' <span style="font-size:10px;color:var(--txt3);font-weight:400">('+doneCount+'/'+actions.length+' · '+pct+'%)</span>' : '')
+    + '</div>'
+    + '<button class="btn btn-p" style="font-size:11px;padding:5px 12px" onclick="openWeeklyForm(\''+deptKey+'\')">+ 액션 추가</button>'
+    + '</div>'
+    // 진행률 바
+    + (actions.length ? '<div style="background:var(--bg-3);border-radius:4px;height:6px;margin-bottom:10px"><div style="background:var(--green);height:6px;border-radius:4px;width:'+pct+'%;transition:width .4s"></div></div>' : '')
+    // 입력 폼
+    + '<div id="wact-form-'+safeId+'" style="display:none;background:var(--bg-2);border:1px solid var(--bdr);border-radius:10px;padding:14px;margin-bottom:12px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--txt1);margin-bottom:10px" id="wact-form-title-'+safeId+'">✅ 주간 액션 추가</div>'
+    + '<input type="hidden" id="wact-edit-idx-'+safeId+'" value="-1">'
+    + '<div class="frow">'
+    + '<div class="fg"><label class="fl">연결 KPI</label>'
+    + '<select id="wact-kpi-'+safeId+'" class="fc"><option value="">선택</option>'+kpiOpts+'</select></div>'
+    + '<div class="fg"><label class="fl">담당자</label>'
+    + '<input id="wact-owner-'+safeId+'" class="fc" type="text" placeholder="담당자 이름" value="'+(DEPT_OWNERS[deptKey]||'')+'"></div>'
+    + '</div>'
+    + '<div class="fg" style="margin-top:8px"><label class="fl">이번 주 실행 내용 <span style="color:var(--red)">*</span></label>'
+    + '<input id="wact-text-'+safeId+'" class="fc" type="text" placeholder="이번 주 실행한 내용을 입력하세요"></div>'
+    + '<div class="frow" style="margin-top:8px">'
+    + '<div class="fg"><label class="fl">실행 결과</label>'
+    + '<input id="wact-result-'+safeId+'" class="fc" type="text" placeholder="결과/성과"></div>'
+    + '<div class="fg"><label class="fl">이슈/장애</label>'
+    + '<input id="wact-issue-'+safeId+'" class="fc" type="text" placeholder="없으면 비워두세요"></div>'
+    + '</div>'
+    + '<div class="fg" style="margin-top:8px"><label class="fl">다음 주 예정 액션</label>'
+    + '<input id="wact-next-'+safeId+'" class="fc" type="text" placeholder="다음 주 실행 예정 내용"></div>'
+    + '<div class="btn-row" style="margin-top:10px">'
+    + '<button class="btn btn-p" onclick="saveWeeklyAct(\''+deptKey+'\')">💾 저장</button>'
+    + '<button class="btn" style="background:var(--bg-3);color:var(--txt2)" onclick="closeWeeklyForm(\''+safeId+'\')">✕ 취소</button>'
+    + '</div>'
+    + '</div>'
+    // 리스트
+    + '<div id="wact-list-'+safeId+'">'
+    + listHTML
+    + '</div>'
+    + '</div>';
+}
+
+function openWeeklyForm(deptKey) {
+  var safeId = 'acc_' + deptKey.replace(/[^a-zA-Z0-9]/g,'_');
+  var form = document.getElementById('wact-form-'+safeId);
+  if (form) form.style.display = 'block';
+}
+
+function closeWeeklyForm(safeId) {
+  var form = document.getElementById('wact-form-'+safeId);
+  if (form) form.style.display = 'none';
+  var idxEl = document.getElementById('wact-edit-idx-'+safeId);
+  if (idxEl) idxEl.value = '-1';
+  ['wact-kpi-','wact-text-','wact-result-','wact-issue-','wact-next-'].forEach(function(p){
+    var el = document.getElementById(p+safeId);
+    if (el) el.value = '';
+  });
+  var titleEl = document.getElementById('wact-form-title-'+safeId);
+  if (titleEl) titleEl.textContent = '✅ 주간 액션 추가';
+}
+
+function saveWeeklyAct(deptKey) {
+  var safeId = 'acc_' + deptKey.replace(/[^a-zA-Z0-9]/g,'_');
+  var kpi    = (document.getElementById('wact-kpi-'+safeId)||{value:''}).value;
+  var text   = ((document.getElementById('wact-text-'+safeId)||{value:''}).value||'').trim();
+  var result = ((document.getElementById('wact-result-'+safeId)||{value:''}).value||'').trim();
+  var issue  = ((document.getElementById('wact-issue-'+safeId)||{value:''}).value||'').trim();
+  var next   = ((document.getElementById('wact-next-'+safeId)||{value:''}).value||'').trim();
+  var owner  = ((document.getElementById('wact-owner-'+safeId)||{value:''}).value||'').trim();
+  var editIdx = parseInt((document.getElementById('wact-edit-idx-'+safeId)||{value:'-1'}).value);
+
+  if (!text) { showToast('❗ 실행 내용을 입력해주세요'); return; }
+
+  if (!STATE.depts[deptKey]) STATE.depts[deptKey] = {};
+  if (!STATE.depts[deptKey].weekly) {
+    STATE.depts[deptKey].weekly = (DEPTS[deptKey]&&DEPTS[deptKey].weekly) ? JSON.parse(JSON.stringify(DEPTS[deptKey].weekly)) : [];
+  }
+
+  var act = { kpi:kpi, text:text, result:result, issue:issue||'없음', next:next, owner:owner||DEPT_OWNERS[deptKey]||'', done:false };
+
+  if (editIdx >= 0) {
+    act.done = STATE.depts[deptKey].weekly[editIdx] ? STATE.depts[deptKey].weekly[editIdx].done : false;
+    STATE.depts[deptKey].weekly[editIdx] = act;
+    showToast('✅ 주간 액션이 수정되었습니다');
+  } else {
+    STATE.depts[deptKey].weekly.push(act);
+    showToast('✅ 주간 액션이 추가되었습니다');
+  }
+
+  saveState();
+  try { syncToFirebase(); } catch(e) {}
+  closeWeeklyForm(safeId);
+  renderDeptPage(deptKey);
+}
+
+function editWeeklyAct(deptKey, idx) {
+  var safeId = 'acc_' + deptKey.replace(/[^a-zA-Z0-9]/g,'_');
+  var acts = (STATE.depts[deptKey]&&STATE.depts[deptKey].weekly) ? STATE.depts[deptKey].weekly
+           : (DEPTS[deptKey]&&DEPTS[deptKey].weekly ? DEPTS[deptKey].weekly : []);
+  var a = acts[idx];
+  if (!a) return;
+
+  var set = function(id, val){ var el=document.getElementById(id+safeId); if(el) el.value=val||''; };
+  set('wact-kpi-', a.kpi);
+  set('wact-text-', a.text||a.task||'');
+  set('wact-result-', a.result);
+  set('wact-issue-', a.issue==='없음' ? '' : (a.issue||''));
+  set('wact-next-', a.next);
+  set('wact-owner-', a.owner);
+
+  var idxEl = document.getElementById('wact-edit-idx-'+safeId);
+  if (idxEl) idxEl.value = idx;
+
+  var titleEl = document.getElementById('wact-form-title-'+safeId);
+  if (titleEl) titleEl.textContent = '✏️ 주간 액션 수정 ('+(idx+1)+'번)';
+
+  openWeeklyForm(deptKey);
+}
+
+function deleteWeeklyAct(deptKey, idx) {
+  if (!confirm('이 주간 액션을 삭제하시겠습니까?')) return;
+  if (!STATE.depts[deptKey]) STATE.depts[deptKey] = {};
+  if (!STATE.depts[deptKey].weekly) {
+    STATE.depts[deptKey].weekly = (DEPTS[deptKey]&&DEPTS[deptKey].weekly) ? JSON.parse(JSON.stringify(DEPTS[deptKey].weekly)) : [];
+  }
+  STATE.depts[deptKey].weekly.splice(idx, 1);
+  saveState();
+  try { syncToFirebase(); } catch(e) {}
+  showToast('🗑️ 삭제되었습니다');
+  renderDeptPage(deptKey);
+}
+
+
 
 function issueHTML(items) {
   return `<div class="ilist">${items.map(i=>`
@@ -5194,6 +5516,128 @@ function deptInputHTML(deptName, d) {
       ✅ 저장 완료 — <span id="disaved_time_${deptName}"></span>
     </div>
   </div>`;
+}
+
+
+// ─── 부서별 액션추가 패널 ───────────────────────────────
+function deptAddActionHTML(deptName, safeId) {
+  var d = DEPTS[deptName];
+  if (!d) return '';
+  var opts = d.kpi.map(function(k) {
+    return '<option value="' + k.item + '">' + k.item + ' (목표: ' + k.target + (k.unit||'') + ')</option>';
+  }).join('');
+
+  var html = '';
+  html += '<div class="dept-input-wrap" style="padding:8px 0" data-dept="' + deptName + '" data-sid="' + safeId + '">';
+  html += '<div class="dept-inp-hdr"><div>';
+  html += '<div style="font-size:13px;font-weight:800;color:var(--txt1);margin-bottom:4px">➕ 주간 액션 추가</div>';
+  html += '<div style="font-size:11px;color:var(--txt3)">' + deptName + ' 부서의 이번 주 실행 액션을 등록합니다</div>';
+  html += '</div></div>';
+  html += '<div style="display:flex;flex-direction:column;gap:10px">';
+  html += '<div class="fg"><label class="fl">📌 연결 KPI</label>';
+  html += '<select id="daa-kpi-' + safeId + '" class="fc"><option value="">KPI 항목 선택</option>' + opts + '</select></div>';
+  html += '<div class="fg"><label class="fl">📝 액션 내용 <span style="color:var(--red)">*</span></label>';
+  html += '<input id="daa-task-' + safeId + '" class="fc" type="text" placeholder="이번 주 실행할 구체적인 액션을 입력하세요"></div>';
+  html += '<div class="frow">';
+  html += '<div class="fg"><label class="fl">✅ 실행 결과</label>';
+  html += '<input id="daa-result-' + safeId + '" class="fc" type="text" placeholder="실행 결과 또는 진행상황"></div>';
+  html += '<div class="fg"><label class="fl">⚠️ 이슈/장애</label>';
+  html += '<input id="daa-issue-' + safeId + '" class="fc" type="text" placeholder="발생한 이슈 (없으면 비워두세요)"></div>';
+  html += '</div>';
+  html += '<div class="frow">';
+  html += '<div class="fg"><label class="fl">🔜 다음 액션</label>';
+  html += '<input id="daa-next-' + safeId + '" class="fc" type="text" placeholder="다음 주 예정 액션"></div>';
+  html += '<div class="fg"><label class="fl">📅 완료 예정일</label>';
+  html += '<input id="daa-due-' + safeId + '" class="fc" type="date"></div>';
+  html += '</div>';
+  html += '<div class="btn-row">';
+  html += '<button class="btn btn-p" onclick="saveDeptActionByEl(this)">✅ 액션 저장</button>';
+  html += '<button class="btn" style="background:var(--bg-3);color:var(--txt2)" onclick="clearDeptActionFormByEl(this)">🗑️ 초기화</button>';
+  html += '</div>';
+  html += '<div class="daa-saved-msg"></div>';
+  html += '</div>';
+  html += '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bdr)">';
+  html += '<div style="font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:8px">📋 등록된 액션 목록</div>';
+  html += '<div class="daa-list-box"></div>';
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+function saveDeptActionByEl(btn) {
+  var wrap = btn.closest ? btn.closest('[data-dept]') : btn.parentNode.parentNode.parentNode;
+  if (!wrap) { showToast('❗ 오류: 부서 정보를 찾을 수 없습니다'); return; }
+  var deptName = wrap.getAttribute('data-dept');
+  var safeId   = wrap.getAttribute('data-sid');
+  saveDeptAction(deptName, safeId);
+}
+
+function saveDeptAction(deptName, safeId) {
+  var wrap = document.querySelector('[data-dept="' + deptName + '"][data-sid="' + safeId + '"]');
+  var kpi    = (document.getElementById('daa-kpi-'    + safeId) || {value:''}).value || '';
+  var task   = ((document.getElementById('daa-task-'   + safeId) || {value:''}).value || '').trim();
+  var result = ((document.getElementById('daa-result-' + safeId) || {value:''}).value || '').trim();
+  var issue  = ((document.getElementById('daa-issue-'  + safeId) || {value:''}).value || '').trim();
+  var next   = ((document.getElementById('daa-next-'   + safeId) || {value:''}).value || '').trim();
+  var due    = (document.getElementById('daa-due-'     + safeId) || {value:''}).value || '';
+  if (!task) { showToast('❗ 액션 내용을 입력해주세요'); return; }
+  var action = {
+    id: Date.now(), dept: deptName, kpi: kpi, task: task,
+    result: result, issue: issue, next: next, due: due,
+    done: false, owner: DEPT_OWNERS[deptName] || '',
+    date: new Date().toLocaleDateString('ko-KR'),
+  };
+  if (!STATE.weeklyActions) STATE.weeklyActions = [];
+  STATE.weeklyActions.push(action);
+  saveState();
+  try { syncToFirebase(); } catch(e) {}
+  showToast('✅ 액션이 저장되었습니다!');
+  clearDeptActionForm(safeId);
+  renderDeptActionList(deptName, safeId);
+  if (wrap) {
+    var msg = wrap.querySelector('.daa-saved-msg');
+    if (msg) {
+      msg.innerHTML = '<div class="dept-inp-saved">✅ 저장 완료! 주간점검 탭에서 확인하세요.</div>';
+      setTimeout(function() { msg.innerHTML = ''; }, 3000);
+    }
+  }
+}
+
+function clearDeptActionFormByEl(btn) {
+  var wrap = btn.closest ? btn.closest('[data-dept]') : btn.parentNode.parentNode.parentNode;
+  if (!wrap) return;
+  var safeId = wrap.getAttribute('data-sid');
+  clearDeptActionForm(safeId);
+}
+
+function clearDeptActionForm(safeId) {
+  ['daa-kpi-','daa-task-','daa-result-','daa-issue-','daa-next-','daa-due-'].forEach(function(prefix) {
+    var el = document.getElementById(prefix + safeId);
+    if (el) el.value = '';
+  });
+}
+
+function renderDeptActionList(deptName, safeId) {
+  var wrap = document.querySelector('[data-dept="' + deptName + '"][data-sid="' + safeId + '"]');
+  var listEl = wrap ? wrap.querySelector('.daa-list-box') : null;
+  if (!listEl) return;
+  var actions = (STATE.weeklyActions || []).filter(function(a) { return a.dept === deptName; });
+  if (!actions.length) {
+    listEl.innerHTML = '<div style="font-size:11px;color:var(--txt3);text-align:center;padding:12px">등록된 액션이 없습니다</div>';
+    return;
+  }
+  listEl.innerHTML = actions.slice().reverse().map(function(a) {
+    return '<div class="aitem' + (a.done ? ' done' : '') + '" style="cursor:default">'
+      + '<div class="achk">' + (a.done ? '✓' : '') + '</div>'
+      + '<div class="abody">'
+      + (a.kpi    ? '<div class="akpi">📌 ' + a.kpi + '</div>' : '')
+      + '<div class="atxt">' + a.task + '</div>'
+      + (a.result ? '<div class="ares">✅ ' + a.result + '</div>' : '')
+      + (a.issue  ? '<div class="aiss">⚠️ ' + a.issue + '</div>' : '')
+      + (a.next   ? '<div class="anxt">🔜 ' + a.next + '</div>' : '')
+      + '<div class="aown">' + a.date + (a.due ? ' · 완료예정: ' + a.due : '') + (a.owner ? ' · ' + a.owner : '') + '</div>'
+      + '</div></div>';
+  }).join('');
 }
 
 function previewRate(deptName, idx, val, isP, target, low) {
@@ -6057,14 +6501,16 @@ function renderDeptPage(deptName) {
           <div class="stab" onclick="switchStab('${safeId}','weekly',this)">✅ 주간점검</div>
           <div class="stab" onclick="switchStab('${safeId}','issues',this)">🔧 개선기록</div>
           <div class="stab" onclick="switchStab('${safeId}','input',this)" style="background:#e3f2fd;color:var(--blue);font-weight:700">✏️ 실적입력</div>
+          <div class="stab" onclick="switchStab('${safeId}','addaction',this)" style="background:#e8f5e9;color:var(--green);font-weight:700">➕ 액션추가</div>
           ${DAILY_TASKS[deptName] ? '<div class="stab" onclick="switchStab(\'' + safeId + '\',\'daily\',this)" style="background:#e8f5e9;color:var(--green);font-weight:700">📅 일일업무</div>' : ''}
           ${deptName==='회계' && isAdmin() ? '<div class="stab" onclick="switchStab(\'' + safeId + '\',\'mgmt\',this)" style="background:#fff8e1;color:#e65100;font-weight:700">📈 경영지표</div>' : ''}
         </div>
         <div class="stab-content active" id="${safeId}-kpi">${kpiTableHTML(d.kpi, deptName)}</div>
-        <div class="stab-content" id="${safeId}-plan">${monthlyPlanHTML(d.monthly)}</div>
+        <div class="stab-content" id="${safeId}-plan">${monthlyPlanHTML(d.monthly, deptName)}</div>
         <div class="stab-content" id="${safeId}-weekly">${weeklyActHTML(weeklyData, deptName)}</div>
         <div class="stab-content" id="${safeId}-issues">${issueHTML(d.issues)}</div>
         <div class="stab-content" id="${safeId}-input">${deptInputHTML(deptName, d)}</div>
+        <div class="stab-content" id="${safeId}-addaction">${deptAddActionHTML(deptName, safeId)}</div>
         ${DAILY_TASKS[deptName] ? '<div class="stab-content" id="' + safeId + '-daily">' + dailyPageHTML(deptName) + '</div>' : ''}
         ${deptName==='회계' && isAdmin() ? '<div class="stab-content" id="' + safeId + '-mgmt">' + mgmtInputHTML() + '</div>' : (deptName==='회계' ? '<div class="stab-content" id="' + safeId + '-mgmt"><div style="text-align:center;padding:40px 20px"><div style="font-size:32px;margin-bottom:12px">🔒</div><div style="font-size:14px;font-weight:700;color:var(--txt2)">관리자 전용 메뉴</div><div style="font-size:12px;color:var(--txt3);margin-top:6px">관리자 계정으로 로그인하면 열람할 수 있습니다</div></div></div>' : '')}
       </div>
@@ -6302,6 +6748,15 @@ function switchStab(accId, tabId, el) {
   el.classList.add('active');
   const target = document.getElementById(accId+'-'+tabId);
   if (target) target.classList.add('active');
+  // 액션추가 탭 진입 시 목록 갱신
+  if (tabId === 'addaction') {
+    var parts = accId.split('_');
+    // safeId → deptName 역변환
+    Object.keys(DEPTS).forEach(function(deptName) {
+      var sid = 'acc_' + deptName.replace(/[^a-zA-Z0-9]/g,'_');
+      if (sid === accId) renderDeptActionList(deptName, accId);
+    });
+  }
 }
 
 function toggleAction(i) {
@@ -6610,9 +7065,11 @@ window.addEventListener('appinstalled', () => {
 // ── 설치 버튼 클릭 (Android/Desktop) ──
 
 // ── 스킵 버튼 (세션 기반 — 다음 링크 오픈 시 다시 팝업) ──
-if (pwaSkipBtn) pwaSkipBtn.addEventListener('click', () => closePwaOverlay(false));
+var pwaSkipBtn = document.getElementById('pwaSkipBtn');
+if (pwaSkipBtn) pwaSkipBtn.addEventListener('click', function() { closePwaOverlay(false); });
 
-if (pwaIosSkipBtn) pwaIosSkipBtn.addEventListener('click', () => closePwaOverlay(false));
+var pwaIosSkipBtn = document.getElementById('pwaIosSkipBtn');
+if (pwaIosSkipBtn) pwaIosSkipBtn.addEventListener('click', function() { closePwaOverlay(false); });
 
 // ── 헤더 설치 버튼 ──
 
@@ -6686,6 +7143,13 @@ if (document.readyState === 'loading') {
 } else {
   setTimeout(doInit, 50);
 }
+
+
+
+
+
+
+
 
 
 
