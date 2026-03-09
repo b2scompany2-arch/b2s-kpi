@@ -857,7 +857,7 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
     <div class="sync-dot" id="syncDot" title="동기화 상태"></div>
     <div class="mbadge" id="monthBadge">2025.03</div>
     <button class="btn btn-csv" onclick="showCsvModal()" style="padding:4px 8px;font-size:10px">⬇ CSV</button>
-    <div id="userBar" style="display:flex;align-items:center;gap:6px">
+    <div id="userBar" style="display:flex;align-items:center;gap:6px"><span id="roleBadge" style="display:none"></span>
       <button id="loginGoogleBtn" onclick="window._googleSignIn && window._googleSignIn()"
         style="display:flex;align-items:center;gap:6px;background:#fff;color:#333;border:1px solid #ddd;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
         <svg width="14" height="14" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
@@ -892,7 +892,6 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
   <div class="ntab" data-page="dept-연구원" onclick="switchPage('dept-연구원')"><div class="ndot" style="background:var(--amber)"></div>🔬 연구원</div>
 
   <div class="ntab" data-page="weekly" onclick="switchPage('weekly')"><div class="ndot" style="background:var(--green)"></div>주간 점검</div>
-  <div class="ntab" data-page="input" onclick="switchPage('input')"><div class="ndot" style="background:var(--txt3)"></div>실적 입력</div>
   <div class="ntab admin-only-tab" data-page="admindata" style="display:none"><div class="ndot" style="background:#e65100"></div>🔐 데이터관리</div>
   <div class="ntab" data-page="manual" onclick="switchPage('manual')"><div class="ndot" style="background:#9c27b0"></div>📖 매뉴얼</div>
 </nav>
@@ -994,123 +993,6 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
     <div class="sec-lbl">■ 주간 종합 평가</div>
     <div style="display:flex;flex-direction:column;gap:8px" id="weeklyEval"></div>
   </div>
-</div>
-
-<!-- ══ INPUT ══ -->
-<div class="page" id="page-input">
-
-  <!-- 입력 페이지 탭 버튼 -->
-  <div style="display:flex;gap:4px;margin-bottom:12px;background:var(--bg-1);border-radius:10px;padding:4px;border:1px solid var(--bdr)">
-    <button class="input-tab active" id="itab-kpi" onclick="switchInputTab('kpi',this)">📝 실적 입력</button>
-    <button class="input-tab" id="itab-action" onclick="switchInputTab('action',this)">➕ 액션 추가</button>
-  </div>
-
-  <!-- 실적 입력 패널 -->
-  <div id="ipanel-kpi">
-  <div class="card">
-    <div class="sec-lbl">📝 월간 실적 입력</div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <div class="period-tabs">
-        <button class="ptab active" onclick="setPeriod('monthly',this)">월간</button>
-        <button class="ptab" onclick="setPeriod('quarterly',this)">분기</button>
-        <button class="ptab" onclick="setPeriod('yearly',this)">연간</button>
-      </div>
-    </div>
-    <div class="frow">
-      <div class="fg">
-        <label class="fl">부서 선택</label>
-        <select class="fc" id="deptSelect" onchange="autoFillOwner('deptSelect','inputManager')">
-          <option value="">부서를 선택하세요</option>
-          <option>회계</option><option>무역1 (카므란)</option><option>무역2 (이리)</option>
-          <option>원료영업</option>
-          <option>생산기획</option><option>MD</option>
-          <option>CS발주</option><option>디자인</option>
-          <option>연구원</option>
-        </select>
-      </div>
-      <div class="fg">
-        <label class="fl">담당자명</label>
-        <input type="text" class="fc" id="inputManager" placeholder="이름을 입력하세요">
-      </div>
-    </div>
-    <div class="fg">
-      <label class="fl">입력 기간</label>
-      <input type="month" class="fc" id="inputMonth" value="">
-    </div>
-    <div id="kpiInputFields"></div>
-    <div class="btn-row">
-      <button class="btn btn-p" onclick="saveInput()">💾 저장 · 동기화</button>
-      <button class="btn" style="background:var(--bg-4);color:var(--txt2)" onclick="clearInput()">초기화</button>
-    </div>
-  </div>
-  </div><!-- /ipanel-kpi -->
-
-  <!-- ══ 액션 추가 패널 ══ -->
-  <div id="ipanel-action" style="display:none">
-  <div class="card">
-    <div class="sec-lbl">➕ 주간 액션 추가</div>
-
-    <!-- ① 부서 선택 + KPI 참고 패널 -->
-    <div class="wa-kpi-panel">
-      <div class="wa-kpi-hdr">
-        <div style="font-size:12px;font-weight:700;color:var(--txt1)">📌 부서 KPI 참고</div>
-        <select class="fc" id="waKpiDept" onchange="renderWaKpiRef(); autoFillOwner('waKpiDept','aOwner')" style="width:140px;padding:4px 8px;font-size:12px">
-          <option value="">부서 선택</option>
-          <option>회계</option>
-          <option>무역1 (카므란)</option>
-          <option>무역2 (이리)</option>
-          <option>원료영업</option>
-          <option>생산기획</option>
-          <option>MD</option>
-          <option>CS발주</option>
-          <option>디자인</option>
-          <option>연구원</option>
-        </select>
-      </div>
-      <div id="waKpiRef" class="wa-kpi-ref">
-        <div style="font-size:11px;color:var(--txt3);text-align:center;padding:10px">부서를 선택하면 KPI 항목이 표시됩니다</div>
-      </div>
-    </div>
-
-    <!-- ② 액션 입력 폼 -->
-    <div class="frow" style="margin-top:12px">
-      <div class="fg">
-        <label class="fl">관련 KPI <span style="font-size:9px;color:var(--blue)">(위에서 클릭하면 자동입력)</span></label>
-        <input type="text" class="fc" id="aKpi" placeholder="KPI 항목을 선택하거나 직접 입력">
-      </div>
-      <div class="fg">
-        <label class="fl">담당자 <span style="font-size:9px;color:var(--green)">(부서 선택 시 자동입력)</span></label>
-        <input type="text" class="fc" id="aOwner" placeholder="부서 선택 시 자동입력">
-      </div>
-    </div>
-
-    <!-- 실행내용 + 결과 다중 입력 -->
-    <div style="margin-bottom:4px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <label class="fl" style="margin:0">실행 내용 &amp; 결과</label>
-        <button class="wa-add-btn" onclick="addActionRow()" type="button">＋ 실행 추가</button>
-      </div>
-      <div id="actionRows">
-        <!-- 첫 번째 행 (기본) -->
-        <div class="action-row" id="arow_0">
-          <div class="action-row-num">1</div>
-          <div class="action-row-body">
-            <input type="text" class="fc action-txt" placeholder="실행 내용을 입력하세요" style="margin-bottom:5px">
-            <input type="text" class="fc action-res" placeholder="결과를 입력하세요" style="background:#f0fff4">
-          </div>
-          <button class="action-row-del" onclick="removeActionRow(0)" type="button" style="visibility:hidden">✕</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="frow">
-      <div class="fg"><label class="fl">발생 문제</label><input type="text" class="fc" id="aIss" placeholder="없음 또는 기재"></div>
-      <div class="fg"><label class="fl">다음 조치</label><input type="text" class="fc" id="aNxt" placeholder="다음 주 조치"></div>
-    </div>
-    <button class="btn btn-p" onclick="addAction()" style="margin-top:6px;width:100%">➕ 액션 저장</button>
-  </div>
-  </div><!-- /ipanel-action -->
-
 </div>
 
 <!-- ══ ADMIN DATA ══ -->
@@ -1225,7 +1107,7 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
       <div class="manual-section">
         <div class="manual-sec-title">📊 월간 실적 입력 방법</div>
         <div class="manual-steps">
-          <div class="manual-step"><div class="step-num">1</div><div>하단 <strong>"실적 입력"</strong> 탭 또는 각 부서 탭 → <strong>✏️ 실적입력</strong> 탭 클릭</div></div>
+          <div class="manual-step"><div class="step-num">1</div><div>각 부서 탭 → <strong>✏️ 실적입력</strong> 탭 클릭</div></div>
           <div class="manual-step"><div class="step-num">2</div><div><strong>부서 선택</strong> → 담당자명 자동 입력됨</div></div>
           <div class="manual-step"><div class="step-num">3</div><div><strong>입력 기간</strong> (월) 선택</div></div>
           <div class="manual-step"><div class="step-num">4</div><div>각 KPI 항목에 <strong>이번 달 실적값</strong> 입력</div></div>
@@ -1362,7 +1244,7 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
     <div class="bni" data-page="kpimaster" onclick="switchPage('kpimaster')"><div class="bni-ico">📋</div><div class="bni-lbl">KPI Master</div></div>
     <div class="bni" data-page="dept-원료영업" onclick="switchPage('dept-원료영업')"><div class="bni-ico">🤝</div><div class="bni-lbl">원료영업</div></div>
     <div class="bni" data-page="weekly" onclick="switchPage('weekly')"><div class="bni-ico">✅</div><div class="bni-lbl">주간점검</div></div>
-    <div class="bni" data-page="input" onclick="switchPage('input')"><div class="bni-ico">✏️</div><div class="bni-lbl">입력</div></div>
+
   </div>
 </nav>
 </div>
@@ -1442,6 +1324,7 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script>
+
 const firebaseConfig = {
   apiKey: "AIzaSyB4RjMGO5zfNuwwk8SxnjYjwjqwpUIVOTA",
   authDomain: "b2s-kpi-7c8c0.firebaseapp.com",
@@ -1487,7 +1370,17 @@ _fbAuth.onAuthStateChanged(async function(user) {
   var syncText  = document.getElementById('syncStatusText');
 
   if (user) {
-    var isAdminUser = window.ADMIN_EMAILS && window.ADMIN_EMAILS.includes(user.email);
+    // 권한 할당 및 전역 변수 세팅
+    var userRole  = (window.USER_PERMISSIONS && window.USER_PERMISSIONS[user.email]) || 'readonly';
+    window._currentUserRole = userRole;
+    window._currentDept     = (userRole !== 'admin' && userRole !== 'readonly') ? userRole : null;
+    // 비인가 사용자 토스트 안내
+    if (userRole === 'readonly') {
+      setTimeout(function(){ if(window.showToast) window.showToast('👁 조회 전용으로 접속되었습니다. 편집 권한이 없습니다.'); }, 500);
+    } else if (userRole !== 'admin') {
+      setTimeout(function(){ if(window.showToast) window.showToast('👤 ' + userRole + ' 부서 편집 권한으로 접속하였습니다.'); }, 500);
+    }
+    var isAdminUser = userRole === 'admin';
     var adminBadge  = isAdminUser
       ? '<span style="background:#fff8e1;color:#e65100;border:1px solid #ffe082;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:800;margin-left:2px">관리자</span>'
       : '';
@@ -1511,8 +1404,23 @@ _fbAuth.onAuthStateChanged(async function(user) {
   }
 });
 
+
 </script>
 <script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1585,29 +1493,96 @@ window.ADMIN_EMAILS = [
   'b2scompany2@gmail.com',
 ];
 
+// ══════════════════════════════════════════════════════════════
+//  이메일 기반 권한 매핑 테이블 (Whitelist)
+//  'admin'  → 모든 부서 편집 가능
+//  '부서명' → 해당 부서만 편집 가능
+//  명단 외  → 조회(Read-Only) 전용
+// ══════════════════════════════════════════════════════════════
+const USER_PERMISSIONS = {
+  'b2scompany2@gmail.com': 'admin',       // ✅ 정진우 대표님 — 전체 관리자
+
+  // ──────────────────────────────────────────────────────────────
+  //  ⚠️  아래 이메일을 각 담당자의 실제 Google 계정으로 교체하세요
+  //  교체 후 GitHub에 다시 업로드하면 즉시 적용됩니다
+  // ──────────────────────────────────────────────────────────────
+
+  // 회계팀 담당자 이메일 입력 (예: 'hong@gmail.com': '회계')
+  'accounting@b2scompany.com': '회계',
+
+  // 무역1팀 담당자 이메일 입력
+  'trade1@b2scompany.com':     '무역1',
+
+  // 무역2팀 담당자 이메일 입력
+  'trade2@b2scompany.com':     '무역2',
+
+  // 원료영업 담당자 이메일 입력
+  'sales@b2scompany.com':      '원료영업',
+
+  // 생산기획 담당자 이메일 입력 (예: 'song@gmail.com': '생산기획')
+  'production@b2scompany.com': '생산기획',
+
+  // MD 담당자 이메일 입력
+  'md@b2scompany.com':         'MD',
+
+  // CS발주 담당자 이메일 입력
+  'cs@b2scompany.com':         'CS발주',
+
+  // 디자인 담당자 이메일 입력
+  'design@b2scompany.com':     '디자인',
+
+  // 연구원 담당자 이메일 입력 (예: 'choi@gmail.com': '연구원')
+  'research@b2scompany.com':   '연구원',
+};
+window.USER_PERMISSIONS = USER_PERMISSIONS;
+
+/** 현재 로그인 사용자의 권한 반환: 'admin' | '부서명' | 'readonly' */
+function getUserRole() {
+  const email = window._currentUser && window._currentUser.email;
+  if (!email) return 'readonly';
+  return USER_PERMISSIONS[email] || 'readonly';
+}
+
+/** deptName 부서의 편집 권한 여부
+ *  - 비로그인: true (로컬 모드 — 저장 시 권한 안내)
+ *  - admin: true (모든 부서)
+ *  - 부서원: 본인 부서만 true
+ *  - 로그인했지만 미등록 이메일: false (조회전용)
+ */
+function canEdit(deptName) {
+  // 비로그인 → 로컬 모드로 허용 (저장 시 별도 처리)
+  if (!window._currentUser) return true;
+  const role = getUserRole();
+  if (role === 'admin') return true;
+  if (role === deptName) return true;
+  // 로그인했지만 명단에 없는 이메일 → 조회전용
+  return false;
+}
+
+/** 로그인했지만 해당 부서 편집 권한이 없는 경우 (탭 🔒 표시용)
+ *  비로그인은 로컬 모드이므로 🔒 표시 안 함
+ */
+function isReadOnly(deptName) {
+  if (!window._currentUser) return false;  // 비로그인 → 로컬 모드, 🔒 없음
+  const role = getUserRole();
+  if (role === 'admin') return false;
+  if (role === deptName) return false;
+  return true;  // 로그인했는데 권한 없음
+}
+
+/** 현재 사용자의 소속 부서명 (관리자·비인가자는 null) */
+function getCurrentUserDept() {
+  const role = getUserRole();
+  return (role === 'admin' || role === 'readonly') ? null : role;
+}
+
 function isAdmin() {
-  if (!window._currentUser) return false;
-  return (window.ADMIN_EMAILS || []).includes(window._currentUser.email);
+  return getUserRole() === 'admin';
 }
 
 
 
 
-function switchInputTab(tab, el) {
-  // 버튼 활성화
-  document.querySelectorAll('.input-tab').forEach(b => b.classList.remove('active'));
-  if (el) el.classList.add('active');
-  // 패널 전환
-  document.getElementById('ipanel-kpi').style.display    = tab==='kpi'    ? 'block' : 'none';
-  document.getElementById('ipanel-action').style.display = tab==='action' ? 'block' : 'none';
-  // 액션 탭 열릴 때 KPI ref 초기화 안내
-  if (tab === 'action') {
-    const ref = document.getElementById('waKpiRef');
-    if (ref && ref.children.length === 0) {
-      ref.innerHTML = '<div style="font-size:11px;color:var(--txt3);text-align:center;padding:10px">부서를 선택하면 KPI 항목이 표시됩니다</div>';
-    }
-  }
-}
 
 function switchManualTab(tab, el) {
   document.querySelectorAll('.manual-tab').forEach(b => b.classList.remove('active'));
@@ -1773,6 +1748,22 @@ const DEPTS = {
   /* ─────────────────────────────
      MD
   ───────────────────────────── */
+  '생산기획': {
+    checklist: [
+      { id:'leadtime',  label:'오늘 리드타임 관리 완료',   kpi:'신제품 출시 리드타임' },
+      { id:'quality',   label:'생산 품질 확인 완료',       kpi:'생산 품질 합격율' },
+      { id:'cost',      label:'원가 절감 검토 진행',       kpi:'원가 절감율' },
+      { id:'vendor',    label:'OEM 업체 커뮤니케이션',     kpi:'OEM 발주 증감율' },
+    ],
+    metrics: [
+      { id:'newLeadDays',  label:'신제품 리드타임 (일)',   unit:'일', kpi:'신제품 출시 리드타임',  type:'num', low:true },
+      { id:'reorderDays',  label:'재발주 리드타임 (일)',   unit:'일', kpi:'재발주 리드타임',       type:'num', low:true },
+      { id:'costSavePct',  label:'원가 절감율 (%)',        unit:'%',  kpi:'원가 절감율',           type:'pct' },
+      { id:'qualityPass',  label:'품질 합격 건수',         unit:'건', kpi:'생산 품질 합격율',      type:'count' },
+      { id:'qualityTotal', label:'전체 검사 건수',         unit:'건', kpi:'생산 품질 합격율',      type:'total' },
+    ],
+  },
+
   'MD': {
     icon:'🛒', color:'#66bb6a', group:'MD',
     kpi:[
@@ -2171,7 +2162,7 @@ function monthlyPlanHTML(items, deptName) {
     // 헤더
     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
     + '<div style="font-size:12px;font-weight:700;color:var(--txt1)">📋 '+deptName+' 월간계획</div>'
-    + '<button class="btn btn-p" style="font-size:11px;padding:5px 12px" onclick="openMonthlyForm(\''+deptName+'\')" id="mplan-add-btn-'+safeId+'">+ 계획 추가</button>'
+    + (isReadOnly(deptName) ? '<span style="font-size:10px;color:var(--txt3);padding:4px 8px;border:1px dashed var(--bdr2);border-radius:6px">🔒 조회 전용</span>' : '<button class="btn btn-p" style="font-size:11px;padding:5px 12px" onclick="openMonthlyForm(\''+deptName+'\')" id="mplan-add-btn-'+safeId+'">+ 계획 추가</button>')
     + '</div>'
     // 입력 폼 (기본 hidden)
     + '<div id="mplan-form-'+safeId+'" style="display:none;background:var(--bg-2);border:1px solid var(--bdr);border-radius:10px;padding:14px;margin-bottom:12px">'
@@ -2194,7 +2185,7 @@ function monthlyPlanHTML(items, deptName) {
     + '<input id="mplan-note-'+safeId+'" class="fc" type="text" placeholder="추가 메모 (선택)"></div>'
     + '</div>'
     + '<div class="btn-row" style="margin-top:10px">'
-    + '<button class="btn btn-p" onclick="saveMonthlyPlan(\''+deptName+'\')">💾 저장</button>'
+    + (!isReadOnly(deptName) ? '<button class="btn btn-p" onclick="saveMonthlyPlan(\''+deptName+'\')">💾 저장</button>' : '')
     + '<button class="btn" style="background:var(--bg-3);color:var(--txt2)" onclick="closeMonthlyForm(\''+safeId+'\')">✕ 취소</button>'
     + '</div>'
     + '</div>'
@@ -2227,6 +2218,11 @@ function closeMonthlyForm(safeId) {
 }
 
 function saveMonthlyPlan(deptName) {
+  // ── 권한 체크 ──
+  if (window._currentUser && !canEdit(deptName)) {
+    showToast('🔒 ' + deptName + ' 편집 권한이 없습니다. 관리자에게 이메일 등록을 요청하세요.');
+    return;
+  }
   var safeId = 'acc_' + deptName.replace(/[^a-zA-Z0-9]/g,'_');
   var kpi    = (document.getElementById('mplan-kpi-'+safeId)||{value:''}).value;
   var task   = ((document.getElementById('mplan-task-'+safeId)||{value:''}).value||'').trim();
@@ -2243,7 +2239,10 @@ function saveMonthlyPlan(deptName) {
     STATE.depts[deptName].monthly = (DEPTS[deptName]&&DEPTS[deptName].monthly) ? JSON.parse(JSON.stringify(DEPTS[deptName].monthly)) : [];
   }
 
-  var plan = { kpi:kpi, task:task, action:action, due:due, note:note, status:status, no: Date.now() };
+  var plan = { kpi:kpi, task:task, action:action, due:due, note:note, status:status, no: Date.now(),
+    authorEmail: window._currentUser ? window._currentUser.email : 'local',
+    authorName:  window._currentUser ? (window._currentUser.displayName||window._currentUser.email) : '로컬',
+    savedAt:     new Date().toISOString() };
 
   if (editIdx >= 0) {
     STATE.depts[deptName].monthly[editIdx] = plan;
@@ -2396,7 +2395,7 @@ function weeklyActHTML(items, deptKey) {
     + '<div style="font-size:13px;font-weight:800;color:var(--txt1)">✅ 주간 액션 관리</div>'
     + (actions.length ? '<div style="font-size:10px;color:var(--txt3);margin-top:2px">완료 '+doneList.length+'/'+actions.length+'건 · 실행률 '+pct+'%</div>' : '')
     + '</div>'
-    + '<button class="btn btn-p" style="font-size:11px;padding:6px 14px" onclick="openWeeklyForm(\''+deptKey+'\')">+ 액션 추가</button>'
+    + (isReadOnly(deptKey) ? '<span style="font-size:10px;color:var(--txt3);padding:4px 8px;border:1px dashed var(--bdr2);border-radius:6px">🔒 조회 전용</span>' : '<button class="btn btn-p" style="font-size:11px;padding:6px 14px" onclick="openWeeklyForm(\''+deptKey+'\')">+ 액션 추가</button>')
     + '</div>'
     // 진행률 바
     + (actions.length ? '<div style="background:var(--bg-3);border-radius:4px;height:5px;margin-bottom:12px"><div style="background:var(--green);height:5px;border-radius:4px;width:'+pct+'%;transition:width .4s"></div></div>' : '')
@@ -2432,7 +2431,7 @@ function weeklyActHTML(items, deptKey) {
     + '<input id="wact-due-'+safeId+'" class="fc" type="date"></div>'
     + '</div>'
     + '<div class="btn-row">'
-    + '<button class="btn btn-p" onclick="saveWeeklyAct(\''+deptKey+'\')">💾 저장</button>'
+    + (!isReadOnly(deptKey) ? '<button class="btn btn-p" onclick="saveWeeklyAct(\''+deptKey+'\')">💾 저장</button>' : '')
     + '<button class="btn" style="background:var(--bg-3);color:var(--txt2)" onclick="closeWeeklyForm(\''+safeId+'\')">✕ 취소</button>'
     + '</div>'
     + '</div>'
@@ -2482,6 +2481,11 @@ function weeklyKpiHint(deptKey, kpiItem) {
 }
 
 function saveWeeklyAct(deptKey) {
+  // ── 권한 체크 ──
+  if (window._currentUser && !canEdit(deptKey)) {
+    showToast('🔒 ' + deptKey + ' 편집 권한이 없습니다. 관리자에게 이메일 등록을 요청하세요.');
+    return;
+  }
   var safeId = 'acc_' + deptKey.replace(/[^a-zA-Z0-9]/g,'_');
   var kpi    = (document.getElementById('wact-kpi-'+safeId)||{value:''}).value;
   var text   = ((document.getElementById('wact-text-'+safeId)||{value:''}).value||'').trim();
@@ -2499,7 +2503,9 @@ function saveWeeklyAct(deptKey) {
     STATE.depts[deptKey].weekly = (DEPTS[deptKey]&&DEPTS[deptKey].weekly) ? JSON.parse(JSON.stringify(DEPTS[deptKey].weekly)) : [];
   }
 
-  var act = { kpi:kpi, text:text, result:result, issue:issue||'없음', next:next, due:due, owner:owner||DEPT_OWNERS[deptKey]||'', done:false, createdAt:new Date().toISOString() };
+  var act = { kpi:kpi, text:text, result:result, issue:issue||'없음', next:next, due:due, owner:owner||DEPT_OWNERS[deptKey]||'', done:false, createdAt:new Date().toISOString(),
+    authorEmail: window._currentUser ? window._currentUser.email : 'local',
+    authorName:  window._currentUser ? (window._currentUser.displayName||window._currentUser.email) : '로컬' };
 
   if (editIdx >= 0) {
     act.done = STATE.depts[deptKey].weekly[editIdx] ? STATE.depts[deptKey].weekly[editIdx].done : false;
@@ -2603,7 +2609,7 @@ function issueHTML(items, deptName) {
   return `<div class="plan-wrap" style="padding:4px 0">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div style="font-size:12px;font-weight:700;color:var(--txt1)">🔧 ${deptName} 개선기록</div>
-      <button class="btn" style="font-size:11px;padding:5px 12px;background:var(--amber);color:#fff;font-weight:700" onclick="openIssueForm('${deptName}')">+ 이슈 등록</button>
+      <button class="btn" style="font-size:11px;padding:5px 12px;background:var(--amber);color:#fff;font-weight:700;display:${isReadOnly(deptName)?'none':'inline-flex'}" onclick="openIssueForm('${deptName}')">+ 이슈 등록</button>
     </div>
 
     <!-- 입력 폼 -->
@@ -2629,7 +2635,7 @@ function issueHTML(items, deptName) {
           <input id="iss-prevent-${safeId}" class="fc" type="text" placeholder="재발방지 대책"></div>
       </div>
       <div class="btn-row" style="margin-top:10px">
-        <button class="btn" style="background:var(--amber);color:#fff;font-weight:700" onclick="saveIssue('${deptName}')">💾 저장</button>
+        ${!isReadOnly(deptName) ? `<button class="btn" style="background:var(--amber);color:#fff;font-weight:700" onclick="saveIssue('${deptName}')">💾 저장</button>` : ''}
         <button class="btn" style="background:var(--bg-3);color:var(--txt2)" onclick="closeIssueForm('${safeId}')">✕ 취소</button>
       </div>
     </div>
@@ -2660,6 +2666,11 @@ function closeIssueForm(safeId) {
 }
 
 function saveIssue(deptName) {
+  // ── 권한 체크 ──
+  if (window._currentUser && !canEdit(deptName)) {
+    showToast('🔒 ' + deptName + ' 편집 권한이 없습니다. 관리자에게 이메일 등록을 요청하세요.');
+    return;
+  }
   const safeId = 'acc_' + deptName.replace(/[^a-zA-Z0-9]/g,'_');
   const date    = (document.getElementById('iss-date-'+safeId)||{value:''}).value;
   const issue   = ((document.getElementById('iss-issue-'+safeId)||{value:''}).value||'').trim();
@@ -2678,7 +2689,9 @@ function saveIssue(deptName) {
       ? JSON.parse(JSON.stringify(d.issues)) : [];
   }
 
-  const rec = { date, issue, cause, action, result, prevent, createdAt: new Date().toISOString() };
+  const rec = { date, issue, cause, action, result, prevent, createdAt: new Date().toISOString(),
+    authorEmail: window._currentUser ? window._currentUser.email : 'local',
+    authorName:  window._currentUser ? (window._currentUser.displayName||window._currentUser.email) : '로컬' };
 
   if (editIdx >= 0) {
     STATE.depts[deptName].issues[editIdx] = rec;
@@ -3092,7 +3105,8 @@ function deptInputHTML(deptName, d) {
         <div style="display:flex;align-items:center;gap:6px">
           <input type="number" class="dir-inp" id="diinp_${deptName}_${i}"
             value="${displayVal}" step="any" placeholder="실적"
-            style="width:90px"
+            style="width:90px${isReadOnly(deptName)?';background:#f9f9f9;color:var(--txt3);cursor:not-allowed':''}"
+            ${isReadOnly(deptName)?`disabled title="편집 권한 없음"`:``}
             oninput="previewRate('${deptName}',${i},this.value,${k.isP?1:0},${k.target},${k.low?1:0})">
           <span class="dir-unit">${unit}</span>
         </div>
@@ -3101,29 +3115,47 @@ function deptInputHTML(deptName, d) {
     </div>`;
   }).join('');
 
+  // 전체 저장된 KPI 개수 계산
+  const savedKpiCount = d.kpi.filter(k => {
+    const ov = STATE.kpiOverrides && STATE.kpiOverrides[`${deptName}__${k.item}`];
+    return ov !== undefined && ov !== 0;
+  }).length;
+
   return `<div class="dept-input-wrap">
+    <!-- 헤더 -->
     <div class="dept-inp-hdr">
       <div>
         <div style="font-size:13px;font-weight:700;color:var(--txt1)">✏️ ${deptName} 실적 입력</div>
-        <div style="font-size:11px;color:var(--txt3);margin-top:2px">수정 후 저장하면 전 기기에 즉시 반영됩니다</div>
+        <div style="font-size:11px;color:var(--txt3);margin-top:2px">
+          ${savedKpiCount > 0
+            ? `<span style="color:var(--green);font-weight:700">${savedKpiCount}개</span> KPI 입력됨 · 수정 후 저장`
+            : '<span style="color:#e65100;font-weight:700">미입력</span> — 아래에서 실적 수치를 입력하세요'}
+        </div>
       </div>
-      <div style="display:flex;gap:6px;align-items:center">
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
         <input type="month" class="fc" id="dimonth_${deptName}" value="${defaultMonth}" style="width:130px;padding:5px 8px">
         <input type="text" class="fc" id="dimgr_${deptName}" value="${DEPT_OWNERS[deptName]||''}" placeholder="담당자명" style="width:90px;padding:5px 8px">
       </div>
     </div>
+    <!-- KPI 입력 목록 -->
     <div class="dept-inp-list">${kpiFields}</div>
+    <!-- 저장 버튼 영역 -->
     <div class="dept-inp-footer">
-      <button class="btn btn-p" onclick="saveDeptInput('${deptName}')" style="padding:10px 24px;font-size:13px">
-        💾 저장 · 동기화
+      ${isReadOnly(deptName) ? `
+      <div style="flex:1;padding:10px 14px;background:#f5f5f5;border-radius:8px;font-size:11px;color:var(--txt3);display:flex;align-items:center;gap:6px">
+        🔒 <strong>조회 전용</strong> — ${deptName} 편집 권한이 없습니다
+      </div>` : `
+      <button class="btn btn-p" onclick="saveDeptInput('${deptName}')" style="flex:1;padding:11px;font-size:13px;font-weight:700">
+        💾 저장 · 전체 기기 동기화
       </button>
-      <button class="btn" onclick="resetDeptInput('${deptName}')" style="background:#f1f5f9;color:var(--txt2);border:1px solid var(--bdr2)">
-        초기화
-      </button>
-      <button class="btn btn-csv" onclick="downloadCSV('dept','${deptName}')" style="padding:10px 14px">
+      <button class="btn" onclick="resetDeptInput('${deptName}')" style="background:#fff3e0;color:#e65100;border:1px solid #ffcc80;padding:11px 14px" title="모든 실적 초기화">
+        🔄 초기화
+      </button>`}
+      <button class="btn btn-csv" onclick="downloadCSV('dept','${deptName}')" style="padding:11px 14px" title="CSV 다운로드">
         ⬇ CSV
       </button>
     </div>
+    <!-- 저장 완료 피드백 -->
     <div class="dept-inp-saved" id="disaved_${deptName}" style="display:none">
       ✅ 저장 완료 — <span id="disaved_time_${deptName}"></span>
     </div>
@@ -3139,6 +3171,11 @@ function saveDeptActionByEl(btn) {
   var safeId   = wrap.getAttribute('data-sid');
   saveDeptAction(deptName, safeId);
 }
+function saveDeptAction(deptName, safeId) {
+  // 레거시 래퍼 — saveWeeklyAct로 위임
+  saveWeeklyAct(deptName);
+}
+
 function clearDeptActionFormByEl(btn) {
   var wrap = btn.closest ? btn.closest('[data-dept]') : btn.parentNode.parentNode.parentNode;
   if (!wrap) return;
@@ -3162,6 +3199,11 @@ function previewRate(deptName, idx, val, isP, target, low) {
 }
 
 function saveDeptInput(deptName) {
+  // ── 권한 체크 ──
+  if (window._currentUser && !canEdit(deptName)) {
+    showToast('🔒 ' + deptName + ' 편집 권한이 없습니다. 관리자에게 이메일 등록을 요청하세요.');
+    return;
+  }
   const d = DEPTS[deptName];
   if (!d) return;
   if (!STATE.kpiOverrides) STATE.kpiOverrides = {};
@@ -3177,6 +3219,18 @@ function saveDeptInput(deptName) {
     savedCount++;
   });
 
+  // 작성자 정보 + 타임스탬프 자동 기록
+  const _now = new Date();
+  const _author = window._currentUser ? window._currentUser.email : 'local';
+  if (!STATE.kpiMeta) STATE.kpiMeta = {};
+  STATE.kpiMeta[`${deptName}__lastSaved`] = {
+    email:      _author,
+    name:       window._currentUser ? (window._currentUser.displayName || _author) : '로컬',
+    savedAt:    _now.toISOString(),
+    savedCount: savedCount,
+    dept:       deptName,
+  };
+
   saveState();
   renderDeptPage(deptName);
   renderDashboard();
@@ -3187,7 +3241,7 @@ function saveDeptInput(deptName) {
   const timeEl  = document.getElementById(`disaved_time_${deptName}`);
   if (savedEl && timeEl) {
     const now = new Date();
-    timeEl.textContent = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')} · ${savedCount}개 KPI 저장됨`;
+    timeEl.textContent = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')} · ${savedCount}개 저장 · ${_author}`;
     savedEl.style.display = 'block';
     setTimeout(() => { savedEl.style.display = 'none'; }, 4000);
   }
@@ -3271,6 +3325,22 @@ const DAILY_TASKS = {
     ],
     memo: true,
   },
+  '생산기획': {
+    checklist: [
+      { id:'leadtime',  label:'오늘 리드타임 관리 완료',   kpi:'신제품 출시 리드타임' },
+      { id:'quality',   label:'생산 품질 확인 완료',       kpi:'생산 품질 합격율' },
+      { id:'cost',      label:'원가 절감 검토 진행',       kpi:'원가 절감율' },
+      { id:'vendor',    label:'OEM 업체 커뮤니케이션',     kpi:'OEM 발주 증감율' },
+    ],
+    metrics: [
+      { id:'newLeadDays',  label:'신제품 리드타임 (일)',  unit:'일', kpi:'신제품 출시 리드타임', type:'num', low:true },
+      { id:'reorderDays',  label:'재발주 리드타임 (일)',  unit:'일', kpi:'재발주 리드타임',      type:'num', low:true },
+      { id:'costSavePct',  label:'원가 절감율 (%)',       unit:'%',  kpi:'원가 절감율',          type:'pct' },
+      { id:'qualityPass',  label:'품질 합격 건수',        unit:'건', kpi:'생산 품질 합격율',     type:'count' },
+      { id:'qualityTotal', label:'전체 검사 건수',        unit:'건', kpi:'생산 품질 합격율',     type:'total' },
+    ],
+  },
+
   'MD': {
     checklist: [
       { id:'salesCheck',  label:'전일 매출 및 광고 성과 분석 완료',      kpi:'매출 성장률' },
@@ -3485,14 +3555,6 @@ function dailyPageHTML(deptName) {
   const saved = loadDailyData(deptName, today);
   const owner = DEPT_OWNERS[deptName] || '';
 
-  // 이번달 일별 로그 달력 미리보기
-  const thisMonth = new Date().toISOString().slice(0,7);
-  const monthLogs = Object.keys(STATE.dailyLogs || {})
-    .filter(k => k.startsWith(`daily_${deptName}_`) && k.includes(thisMonth))
-    .map(k => k.replace(`daily_${deptName}_`,''));
-
-  const calHTML = buildMiniCal(thisMonth, monthLogs, deptName);
-
   // 체크리스트
   const checkHTML = tasks.checklist.map(t => {
     const checked = saved.checklist[t.id] === true;
@@ -3501,8 +3563,8 @@ function dailyPageHTML(deptName) {
         ${checked ? '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>' : ''}
       </div>
       <div class="daily-check-body">
-        <div class="daily-check-label ${checked?'done':''}">${t.label}</div>
-        <div class="daily-check-kpi">📊 ${t.kpi}</div>
+        <div class="daily-check-label ${checked?'done':''}">` + t.label + `</div>
+        <div class="daily-check-kpi">📊 ` + t.kpi + `</div>
       </div>
     </div>`;
   }).join('');
@@ -3519,15 +3581,15 @@ function dailyPageHTML(deptName) {
     const clr = r>=.9?'var(--green)':r>=.8?'var(--amber)':'var(--red)';
     return `<div class="daily-metric-row">
       <div class="daily-metric-left">
-        <div class="daily-metric-label">${m.label}</div>
-        <div class="daily-metric-kpi">📊 ${m.kpi} · 현재 <span style="color:${clr};font-weight:700">${(r*100).toFixed(0)}%</span></div>
+        <div class="daily-metric-label">` + m.label + `</div>
+        <div class="daily-metric-kpi">📊 ` + m.kpi + ` · 현재 <span style="color:${clr};font-weight:700">${(r*100).toFixed(0)}%</span></div>
       </div>
       <div style="display:flex;align-items:center;gap:6px">
         <input type="number" class="dir-inp daily-metric-inp" id="dm_${deptName}_${m.id}"
           value="${val}" min="0" step="1" placeholder="0"
           style="width:75px;text-align:right"
           onchange="autoSaveDaily('${deptName}','${today}')">
-        <span class="dir-unit">${m.unit}</span>
+        <span class="dir-unit">` + m.unit + `</span>
       </div>
     </div>`;
   }).join('');
@@ -3542,15 +3604,20 @@ function dailyPageHTML(deptName) {
         onchange="autoSaveDaily('${deptName}','${today}')">${saved.memo||''}</textarea>
     </div>` : '';
 
+  // 이번달 달력 (아코디언용)
+  const thisMonth = new Date().toISOString().slice(0,7);
+  const monthLogs = Object.keys(STATE.dailyLogs || {})
+    .filter(k => k.startsWith(`daily_${deptName}_`) && k.includes(thisMonth))
+    .map(k => k.replace(`daily_${deptName}_`,''));
+  const calHTML = buildMiniCal(thisMonth, monthLogs, deptName);
+
   return `<div class="daily-wrap">
 
     <!-- 헤더 -->
     <div class="daily-hdr">
       <div>
         <div style="font-size:13px;font-weight:800;color:var(--txt1)">📅 일일 업무 기록</div>
-        <div style="font-size:11px;color:var(--txt3);margin-top:2px">
-          저장 시 팀 전체 공유 · KPI 자동 반영
-        </div>
+        <div style="font-size:11px;color:var(--txt3);margin-top:2px">저장 시 팀 전체 공유 · KPI 자동 반영</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <input type="date" class="fc" id="dailyDate_${deptName}" value="${today}"
@@ -3560,60 +3627,78 @@ function dailyPageHTML(deptName) {
       </div>
     </div>
 
-    <!-- 팀 전체 작성 현황 -->
-    <div class="team-daily-wrap" id="teamDailyWrap_${deptName}">
-      ${teamDailyStatusHTML(deptName, today)}
-    </div>
+    <!-- 날짜 로드 알림 (날짜 피커 변경시 표시) -->
+    <div class="daily-date-loaded" id="daily_date_loaded_${deptName}" style="display:none"></div>
 
-    <!-- 날짜 로드 알림 -->
-    <div class="daily-date-loaded" id="daily_date_loaded_${deptName}"></div>
-
-    <!-- 이번달 달력 -->
-    <div class="daily-cal-wrap">
-      <div style="font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:6px">📆 ${thisMonth} 기록 현황 <span style="font-size:9px;font-weight:400;color:var(--txt3)">· 날짜 클릭 시 해당 기록 로드</span></div>
-      <div style="display:flex;gap:8px;font-size:9px;margin-bottom:5px;flex-wrap:wrap">
-        <span style="display:inline-flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block"></span>정상(≥90%)</span>
-        <span style="display:inline-flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#f9a825;display:inline-block"></span>주의(≥70%)</span>
-        <span style="display:inline-flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#ef5350;display:inline-block"></span>위험/이슈</span>
-      </div>
-      ${calHTML}
-    </div>
-
-    <!-- 체크리스트 -->
+    <!-- ① 오늘 체크리스트 -->
     <div class="daily-section">
       <div class="daily-section-title">✅ 오늘 체크리스트</div>
       <div class="daily-checklist">${checkHTML}</div>
     </div>
 
-    <!-- 수치 입력 -->
+    <!-- ② 수치 입력 -->
     <div class="daily-section">
       <div class="daily-section-title">📊 수치 입력 <span style="font-size:10px;font-weight:400;color:var(--txt3)">(저장 시 이번달 KPI에 자동 누적)</span></div>
       <div class="daily-metrics">${metricHTML}</div>
     </div>
 
+    <!-- ③ 메모 -->
     ${memoHTML}
 
     <!-- 저장 버튼 -->
-    <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
-      <button class="btn btn-p" onclick="manualSaveDaily('${deptName}')" style="flex:1;padding:11px">
+    <div style="display:flex;gap:8px;margin-top:14px;align-items:center">
+      <button class="btn btn-p" onclick="manualSaveDaily('${deptName}')" style="flex:1;padding:12px;font-size:13px;font-weight:700">
         💾 저장 · KPI 반영
       </button>
-      <button class="btn" onclick="viewDailyHistory('${deptName}')"
-        style="background:#f0f7ff;color:var(--blue);border:1px solid #90caf9;padding:11px 14px">
-        📋 이력
-      </button>
       <button class="btn" onclick="linkDailyToWeekly('${deptName}')" id="daily_link_${deptName}"
-        style="background:#f3e5f5;color:#8e24aa;border:1px solid #ce93d8;padding:11px 14px">
-        🔗 주간액션 연동
+        style="background:#f3e5f5;color:#8e24aa;border:1px solid #ce93d8;padding:12px 14px">
+        🔗 주간연동
       </button>
     </div>
     <div class="dept-inp-saved" id="daily_saved_${deptName}" style="display:none">
       ✅ 저장 완료 · KPI 자동 반영됨
     </div>
 
+    <!-- ④ [이력/현황 보기] 아코디언 -->
+    <div style="margin-top:16px;border-top:1px solid var(--bdr);padding-top:12px">
+      <button class="btn" id="dailyHistBtn_${deptName}"
+        onclick="toggleDailyHistPanel('${deptName}')"
+        style="width:100%;background:var(--bg-3);color:var(--txt2);border:1px solid var(--bdr2);padding:9px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between">
+        <span>📋 이력 / 팀 현황 보기</span>
+        <span id="dailyHistArrow_${deptName}" style="font-size:10px;transition:transform .2s">▼</span>
+      </button>
+
+      <div id="dailyHistPanel_${deptName}" style="display:none;margin-top:8px;animation:fadeIn .2s">
+
+        <!-- 팀 현황 -->
+        <div style="margin-bottom:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:6px;padding:6px 10px;background:var(--bg-3);border-radius:6px">
+            👥 팀 작성 현황
+          </div>
+          <div id="teamDailyWrap_${deptName}">
+            ${teamDailyStatusHTML(deptName, today)}
+          </div>
+        </div>
+
+        <!-- 이번달 달력 -->
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:6px;padding:6px 10px;background:var(--bg-3);border-radius:6px">
+            📆 ${thisMonth} 기록 현황
+            <span style="font-size:9px;font-weight:400;color:var(--txt3)"> · 날짜 클릭 시 해당 기록 로드</span>
+          </div>
+          <div style="display:flex;gap:8px;font-size:9px;margin-bottom:5px;flex-wrap:wrap">
+            <span style="display:inline-flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block"></span>정상(≥90%)</span>
+            <span style="display:inline-flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#f9a825;display:inline-block"></span>주의(≥70%)</span>
+            <span style="display:inline-flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#ef5350;display:inline-block"></span>위험/이슈</span>
+          </div>
+          ${calHTML}
+        </div>
+
+      </div>
+    </div>
+
   </div>`;
 }
-
 
 // 특정 날짜의 일일로그 기반 KPI 달성률 상태 계산
 // returns: 'ok'(>=90%) | 'warn'(>=70%) | 'danger'(<70%) | null(로그 없음)
@@ -4004,12 +4089,34 @@ function loadDailyByDate(dept, dateStr) {
     setTimeout(function(){ notice.style.display = 'none'; }, 5000);
   }
 
-  // 팀 현황도 갱신
-  var teamWrap = document.getElementById('teamDailyWrap_' + dept);
-  if (teamWrap) teamWrap.innerHTML = teamDailyStatusHTML(dept, dateStr);
+  // 팀 현황 갱신 (아코디언 열려있을 때만)
+  var histPanel = document.getElementById('dailyHistPanel_' + dept);
+  var teamWrap  = document.getElementById('teamDailyWrap_' + dept);
+  if (teamWrap && histPanel && histPanel.style.display !== 'none') {
+    teamWrap.innerHTML = teamDailyStatusHTML(dept, dateStr);
+  }
 
   showToast('📅 ' + dateStr + ' 기록 로드됨');
 }
+
+
+function toggleDailyHistPanel(dept) {
+  var panel = document.getElementById('dailyHistPanel_' + dept);
+  var arrow = document.getElementById('dailyHistArrow_' + dept);
+  if (!panel) return;
+  var isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
+  // 열 때 팀 현황 갱신
+  if (!isOpen) {
+    var today = new Date().toISOString().slice(0,10);
+    var dateEl = document.getElementById('dailyDate_' + dept);
+    var dateStr = (dateEl && dateEl.value) ? dateEl.value : today;
+    var teamWrap = document.getElementById('teamDailyWrap_' + dept);
+    if (teamWrap) teamWrap.innerHTML = teamDailyStatusHTML(dept, dateStr);
+  }
+}
+window.toggleDailyHistPanel = toggleDailyHistPanel;
 
 function changeDailyDate(dept, dateStr) {
   // date 피커 변경 시 loadDailyByDate로 통합 처리
@@ -4247,8 +4354,14 @@ function applyRoleUI() {
   const adminBadgeEl = document.getElementById('adminRoleBadge');
   if (adminBadgeEl) adminBadgeEl.style.display = admin ? 'inline-flex' : 'none';
 
-  // 회계 경영지표 탭 재렌더
+  // 현재 활성화된 부서 페이지 재렌더 (권한 버튼 갱신)
   if (window.renderDeptPage) {
+    const activeDeptPage = document.querySelector('.page.active[id^="page-dept-"]');
+    if (activeDeptPage) {
+      const activeDept = activeDeptPage.id.replace('page-dept-', '');
+      try { renderDeptPage(activeDept); } catch(e) {}
+    }
+    // 회계 경영지표 탭은 항상 갱신
     try { renderDeptPage('회계'); } catch(e) {}
   }
 
@@ -4268,6 +4381,31 @@ function applyRoleUI() {
     } else {
       syncTxt.style.color = '';
     }
+  }
+
+  // 권한 레이블 배지 업데이트
+  const _role    = getUserRole();
+  const _roleBadge = document.getElementById('roleBadge');
+  if (_roleBadge) {
+    if (_role === 'admin') {
+      _roleBadge.textContent = '👑 관리자';
+      _roleBadge.style.cssText = 'background:#fff8e1;color:#e65100;border:1px solid #ffe082;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:800;margin-left:4px';
+      _roleBadge.style.display = 'inline-flex';
+    } else if (_role === 'readonly') {
+      _roleBadge.textContent = '👁 조회전용';
+      _roleBadge.style.cssText = 'background:#f5f5f5;color:var(--txt3);border:1px solid var(--bdr2);border-radius:4px;padding:1px 6px;font-size:9px;margin-left:4px';
+      _roleBadge.style.display = window._currentUser ? 'inline-flex' : 'none';
+    } else {
+      _roleBadge.textContent = '✏️ ' + _role;
+      _roleBadge.style.cssText = 'background:#e3f2fd;color:var(--blue);border:1px solid #bbdefb;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;margin-left:4px';
+      _roleBadge.style.display = 'inline-flex';
+    }
+  }
+
+  // 로그아웃 시 권한 초기화
+  if (!window._currentUser) {
+    window._currentUserRole = 'readonly';
+    window._currentDept     = null;
   }
 
 }
@@ -4469,10 +4607,10 @@ function renderDeptPage(deptName) {
       <div class="dacc-body" id="${safeId}-body">
         <div class="stabs">
           <div class="stab active" onclick="switchStab('${safeId}','kpi',this)">📊 KPI</div>
-          <div class="stab" onclick="switchStab('${safeId}','plan',this)">📋 월간계획</div>
-          <div class="stab" onclick="switchStab('${safeId}','weekly',this)">✅ 주간점검</div>
-          <div class="stab" onclick="switchStab('${safeId}','issues',this)">🔧 개선기록</div>
-          <div class="stab" onclick="switchStab('${safeId}','input',this)" style="background:#e3f2fd;color:var(--blue);font-weight:700">✏️ 실적입력</div>
+          <div class="stab" onclick="switchStab('${safeId}','plan',this)">📋 월간계획${isReadOnly(deptName)?'   🔒':''}</div>
+          <div class="stab" onclick="switchStab('${safeId}','weekly',this)">✅ 주간점검${isReadOnly(deptName)?'   🔒':''}</div>
+          <div class="stab" onclick="switchStab('${safeId}','issues',this)">🔧 개선기록${isReadOnly(deptName)?'   🔒':''}</div>
+          <div class="stab" onclick="switchStab('${safeId}','input',this)" style="background:#e3f2fd;color:var(--blue);font-weight:700">✏️ 실적입력${isReadOnly(deptName)?'   🔒':''}</div>
 
           ${DAILY_TASKS[deptName] ? (function(){
             var _today  = new Date().toISOString().slice(0,10);
@@ -4841,19 +4979,31 @@ function saveInput() {
   const d = DEPTS[key] || DEPTS[dn];
   if (!d) { showToast('⚠️ 부서를 찾을 수 없습니다'); return; }
   if (!STATE.kpiOverrides) STATE.kpiOverrides = {};
+  let savedCount = 0;
   d.kpi.forEach((k, i) => {
     const el = document.getElementById('inp_'+i);
     if (el && el.value !== '') {
-      const val = parseFloat(el.value);
+      let val = parseFloat(el.value);
       if (!isNaN(val)) {
+        if (k.isP) val = val / 100;   // % → decimal (saveDeptInput과 동일 로직)
         STATE.kpiOverrides[`${key}__${k.item}`] = val;
+        savedCount++;
       }
     }
   });
   saveState();
-  renderAll();
-  showToast(`✅ ${key} 실적이 저장되었습니다`);
-  syncToFirebase();
+  try { renderAll(); } catch(e) {}
+  try { renderDashboard(); } catch(e) {}
+  // 작성자 기록
+  if (!STATE.kpiMeta) STATE.kpiMeta = {};
+  STATE.kpiMeta[`${key}__lastSaved`] = {
+    email:      window._currentUser ? window._currentUser.email : 'local',
+    name:       window._currentUser ? (window._currentUser.displayName||window._currentUser.email) : '로컬',
+    savedAt:    new Date().toISOString(),
+    savedCount: savedCount,
+  };
+  showToast(`✅ ${key} 실적 ${savedCount}건 저장 완료`);
+  try { syncToFirebase(); } catch(e) {}
 }
 
 function clearInput() {
@@ -4978,6 +5128,7 @@ function switchPage(pageId) {
   const pg = document.getElementById('page-'+pageId);
   if (pg) pg.classList.add('active');
   document.querySelectorAll(`[data-page="${pageId}"]`).forEach(t=>t.classList.add('active'));
+
 
   // 부서 페이지 진입 시 렌더 트리거
   if (pageId.startsWith('dept-')) {
@@ -5172,6 +5323,20 @@ if (document.readyState === 'loading') {
 } else {
   setTimeout(doInit, 50);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
