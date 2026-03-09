@@ -4096,6 +4096,8 @@ _fbAuth.onAuthStateChanged(async function(user) {
 
 
 
+
+
 const DEPT_OWNERS = {
   '회계':     '정보라',
   '무역1':    '카므란',
@@ -4227,19 +4229,10 @@ const DEPTS = {
       {no:4,item:'세금계산서 처리 정확도',target:.99,actual:0,prev:0,trend:'',comment:'',isP:true,cat:'result'},
     ],
     monthly:[
-      {no:1,kpi:'재고 정확도',task:'월 1회 순환 실사 시행',action:'구역별 실사 일정 수립 및 장부 대조',due:'3/31',status:'예정',note:''},
-      {no:2,kpi:'미수금 회수율',task:'미수금 거래처 독촉 연락 체계화',action:'30일 이상 미수 거래처 주 1회 연락',due:'3/25',status:'예정',note:''},
-      {no:3,kpi:'결산 완료일 준수',task:'월 결산 체크리스트 표준화',action:'계정별 마감 순서 및 담당자 지정',due:'3/31',status:'예정'},
-      {no:4,kpi:'세금계산서 처리 정확도',task:'세금계산서 발행 전 2중 검증 도입',action:'발행 전 품목·금액·사업자번호 교차 확인',due:'3/10',status:'예정',note:''},
     ],
     weekly:[
-      {kpi:'미수금 회수율',text:'미수금 거래처 5곳 독촉 연락',result:'2곳 입금 확인, 3곳 다음주 예정',issue:'1곳 연락 두절',next:'내용증명 발송 검토',owner:'회계담당',done:false},
-      {kpi:'재고 정확도',text:'C구역 재고 실사 진행',result:'장부 대비 97% 일치',issue:'원료 2종 수량 불일치',next:'입고 기록 재검토',owner:'회계담당',done:false},
-      {kpi:'세금계산서 처리 정확도',text:'이번주 세금계산서 38건 처리',result:'38건 오류 없이 발행 완료',issue:'없음',next:'다음주 마감 건 사전 준비',owner:'회계담당',done:false},
     ],
     issues:[
-      {date:'3/5',issue:'세금계산서 사업자번호 오기재 2건',cause:'수기 입력 시 번호 확인 누락',action:'발행 전 사업자번호 2중 확인 의무화',result:'',prevent:'거래처 마스터 DB 관리 시스템 도입'},
-      {date:'3/18',issue:'미수금 30일 초과 거래처 미파악',cause:'미수금 현황 주간 모니터링 부재',action:'주간 미수금 현황 보고서 작성 시작',result:'',prevent:'미수금 자동 알림 기준 수립'},
     ],
   },
 
@@ -4255,20 +4248,10 @@ const DEPTS = {
       {no:6,item:'공급가 절감율',target:.05,actual:0,prev:0,trend:'',comment:'',isP:true,cat:'result'},
     ],
     monthly:[
-      {no:1,kpi:'운송비 절감',task:'포워더 3사 운송비 비교표 작성',action:'기존 vs 신규 포워더 건당 단가 비교',due:'3/10',status:'예정',note:''},
-      {no:2,kpi:'신규 공급사 발굴',task:'동남아 공급사 리스트업 및 컨택',action:'태국/베트남 10곳 컨택',due:'3/25',status:'예정',note:''},
-      {no:3,kpi:'서류 취합율',task:'수입건별 서류 체크리스트 운영',action:'품목별 필수서류 리스트+진행현황 관리',due:'3/8',status:'예정'},
-      {no:4,kpi:'발주 오류율',task:'발주서 양식 표준화 및 더블체크 도입',action:'발주 전 팀장 확인 프로세스 적용',due:'3/5',status:'예정',note:''},
-      {no:5,kpi:'공급가 절감',task:'원료 3개 품목 대체 공급사 견적 비교',action:'공급사별 단가표 작성 및 비교분석',due:'3/15',status:'예정'},
     ],
     weekly:[
-      {kpi:'서류 취합율',text:'수입 8건 서류 현황 점검',result:'7건 완비, 1건 원산지증명서 미수령',issue:'현지 공휴일로 발급 지연',next:'발급 완료 후 즉시 스캔 수령 요청',owner:'카므란',done:false},
-      {kpi:'운송비 절감',text:'B포워더 연간 계약 체결',result:'건당 $50 절감 합의, 월 $1,500 효과',issue:'없음',next:'계약서 날인 완료',owner:'카므란',done:false},
-      {kpi:'신규 공급사 발굴',text:'태국 공급사 3곳 화상 미팅',result:'1곳 품질/단가 적합 확인',issue:'2곳 MOQ 과다',next:'적합 업체 공장 실사 일정 조율',owner:'카므란',done:false},
     ],
     issues:[
-      {date:'3/5',issue:'발주서 품명 오기재로 오배송 발생',cause:'수기 입력 시 품명코드 미확인',action:'발주서에 품명코드 필수 입력란 추가',result:'',prevent:'품명코드 자동완성 기능 도입 예정'},
-      {date:'3/12',issue:'통관 지연 3일 (원산지증명서 누락)',cause:'현지 공휴일 일정 미확인',action:'수입건별 서류 체크리스트 도입',result:'',prevent:'현지 공휴일 캘린더 공유'},
     ],
   },
 
@@ -4283,20 +4266,10 @@ const DEPTS = {
       {no:6,item:'공급가 절감율',target:.05,actual:0,prev:0,trend:'',comment:'',isP:true,cat:'result'},
     ],
     monthly:[
-      {no:1,kpi:'운송비 절감',task:'항공→해운 전환 가능 품목 선별',action:'리드타임 여유 있는 품목 해운 전환',due:'3/10',status:'예정',note:''},
-      {no:2,kpi:'신규 공급사 발굴',task:'베트남 현지 공급사 리스트업',action:'KOTRA 베트남 바이어 DB 활용',due:'3/20',status:'예정',note:''},
-      {no:3,kpi:'서류 취합율',task:'수입건별 서류 체크리스트 운영',action:'품목별 필수서류 리스트+진행현황 관리',due:'3/8',status:'예정'},
-      {no:4,kpi:'발주 오류율',task:'전자발주 시스템 전환',action:'수기 발주서→ERP 전자발주 전환',due:'3/5',status:'예정',note:''},
-      {no:5,kpi:'공급가 절감',task:'베트남 주요 원료 단가 재협상',action:'분기 물량 약정 조건으로 단가 인하 요청',due:'3/15',status:'예정',note:''},
     ],
     weekly:[
-      {kpi:'서류 취합율',text:'수입 6건 서류 현황 점검',result:'6건 모두 서류 완비',issue:'없음',next:'다음 주 수입 8건 서류 사전 준비',owner:'이리',done:false},
-      {kpi:'운송비 절감',text:'해운 전환 3개 품목 운송 현황 확인',result:'예정 도착일 내 도착 확인',issue:'없음',next:'추가 2개 품목 해운 전환 검토',owner:'이리',done:false},
-      {kpi:'신규 공급사 발굴',text:'베트남 공급사 2곳 이메일 미팅',result:'1곳 견적서 수령',issue:'1곳 응답 지연',next:'응답 지연 업체 재컨택',owner:'이리',done:false},
     ],
     issues:[
-      {date:'3/8',issue:'해운 전환 품목 도착 2일 지연',cause:'선적 일정 변경 미통보',action:'선적 완료 즉시 일정 공유 요청',result:'',prevent:'선적 후 24시간 내 ETD 공유 원칙'},
-      {date:'3/15',issue:'발주서 수량 단위 오기재 (kg→ton)',cause:'단위 변환 미확인',action:'발주서 단위 검증 체크리스트 추가',result:'',prevent:'발주 전 단위 2중 확인'},
     ],
   },
 
@@ -4317,21 +4290,10 @@ const DEPTS = {
       {no:9,item:'업체 문의 응답율',target:.95,actual:0,prev:0,trend:'',comment:'',isP:true,cat:'activity'},
     ],
     monthly:[
-      {no:1,kpi:'신규 거래처',task:'화장품 업체 타겟 리스트 20곳 작성',action:'업종별 잠재고객 DB 구축',due:'3/10',status:'예정'},
-      {no:2,kpi:'방문 건수',task:'타겟 10곳 방문 스케줄 수립',action:'주 3회 방문 일정 사전 배정',due:'3/5',status:'예정',note:''},
-      {no:3,kpi:'견적→수주',task:'미수주 건 원인분석 및 재제안',action:'실패 사유별 분류 후 가격 재조정',due:'3/15',status:'예정',note:''},
-      {no:4,kpi:'샘플→발주',task:'샘플 제공 후 2주 내 Follow-up 강화',action:'샘플 발송 7일/14일 후 연락 스케줄',due:'3/12',status:'예정'},
-      {no:5,kpi:'방문보고서',task:'방문보고서 양식 표준화 및 교육',action:'방문목적/결과/후속조치 양식 배포',due:'3/5',status:'예정',note:''},
     ],
     weekly:[
-      {kpi:'방문 건수',text:'타겟 업체 5곳 방문 진행',result:'5곳 방문 완료 (식품 3, 화장품 2)',issue:'화장품 1곳 담당자 부재',next:'다음주 재방문 일정 확정',owner:'담당자',done:false},
-      {kpi:'샘플→발주',text:'기 발송 샘플 3건 Follow-up',result:'1건 발주 확정, 2건 테스트 진행중',issue:'1건 테스트 결과 2주 소요',next:'테스트 완료 즉시 단가 제안',owner:'담당자',done:false},
-      {kpi:'견적→수주',text:'미수주 3건 재제안서 발송',result:'1건 수주 확정, 2건 검토중',issue:'경쟁사 대비 단가 5% 높음',next:'원가 재산정 후 최종 단가 제시',owner:'담당자',done:false},
-      {kpi:'기존 거래처',text:'A식품 분기 미팅',result:'리오더 15% 증가 합의',issue:'없음',next:'발주서 수령 대기',owner:'담당자',done:false},
     ],
     issues:[
-      {date:'3/8',issue:'견적서 단가 오기재로 클레임',cause:'구버전 단가표 참조',action:'단가표 클라우드 관리+버전관리 도입',result:'',prevent:'단가 변경 시 알림 시스템 구축'},
-      {date:'3/15',issue:'후속조치 미실행으로 샘플 요청 기회 상실',cause:'방문 후 후속 연락 기한 미설정',action:'CRM 후속 일정 자동 등록 + 7일 알림',result:'',prevent:'미실행 건 주간 점검에서 원인 분석'},
     ],
   },
 
@@ -4348,20 +4310,10 @@ const DEPTS = {
       {no:5,item:'생산 품질 합격율',target:.98,actual:0,prev:0,trend:'',comment:'',isP:true,cat:'result'},
     ],
     monthly:[
-      {no:1,kpi:'신제품 리드타임',task:'출시 프로세스 타임라인 수립',action:'기획→개발→생산→출시 D-day 설정',due:'3/10',status:'예정'},
-      {no:2,kpi:'신제품 리드타임',task:'OEM 공장 리드타임 단축 협의',action:'주요 3개 공장 생산 일정 단축 요청',due:'3/20',status:'예정',note:''},
-      {no:3,kpi:'원가 절감율',task:'포장재 단가 비교 및 변경',action:'기존 vs 신규 포장재 3사 비교',due:'3/15',status:'예정',note:''},
-      {no:4,kpi:'OEM 발주',task:'OEM 파트너 신규 1곳 발굴',action:'소량 생산 가능 OEM 공장 조사',due:'3/25',status:'예정',note:''},
-      {no:5,kpi:'재발주 리드타임',task:'재발주 자동 알림 시스템 구축',action:'안전재고 도달 시 자동 알림 발송',due:'3/15',status:'예정'},
     ],
     weekly:[
-      {kpi:'신제품 리드타임',text:'신제품 A 생산 일정 관리',result:'기획 완료→OEM 샘플 의뢰 완료',issue:'OEM 공장 샘플 생산 1주 지연',next:'후속 공정 병행 진행으로 만회 계획',owner:'담당자',done:false},
-      {kpi:'원가 절감율',text:'포장재 변경 3개 품목 적용',result:'건당 150원 절감, 월 45만원 효과',issue:'없음',next:'추가 5개 품목 변경 검토',owner:'담당자',done:false},
-      {kpi:'OEM 발주',text:'OEM 공장 3곳 소량 생산 견적 비교',result:'1곳 단가/품질 적합 확인',issue:'2곳 MOQ 과다',next:'적합 업체와 시험 생산 진행',owner:'담당자',done:false},
     ],
     issues:[
-      {date:'3/5',issue:'OEM 생산 색상 불일치 3건',cause:'컬러 기준 견본 미제공',action:'OEM 발주 시 컬러칩 필수 첨부',result:'',prevent:'디지털 컬러코드+실물 견본 이중 제공'},
-      {date:'3/18',issue:'재발주 지연으로 2개 SKU 품절 발생',cause:'안전재고 기준 미설정',action:'SKU별 안전재고 기준 수립+자동 알림',result:'',prevent:'주간 재고 모니터링 리포트 발행'},
     ],
   },
 
@@ -4379,19 +4331,10 @@ const DEPTS = {
       {no:6,item:'재고 회전율',target:6,actual:0,prev:0,trend:'',comment:'',unit:'회',cat:'result'},
     ],
     monthly:[
-      {no:1,kpi:'매출 성장률',task:'봄맞이 프로모션 기획전 운영',action:'쿠팡/네이버 할인 기획전 등록',due:'3/5',status:'예정'},
-      {no:2,kpi:'광고 ROAS',task:'저효율 키워드 정리 및 예산 재배분',action:'ROAS 2.0 미만 키워드 OFF',due:'3/10',status:'예정',note:''},
-      {no:3,kpi:'적자 SKU 정리율',task:'적자 SKU 15개 수익성 분석',action:'SKU별 원가/마진/판매량 분석표',due:'3/8',status:'예정',note:''},
-      {no:4,kpi:'행사 성사율',task:'유통채널 행사 제안서 5건 작성',action:'쿠팡/네이버/올리브영 등 행사 제안',due:'3/20',status:'예정',note:''},
-      {no:5,kpi:'상위 SKU 매출비중',task:'인기 SKU 번들 세트 3종 기획',action:'상위 5개 SKU 묶음 세트 구성',due:'3/20',status:'예정'},
     ],
     weekly:[
-      {kpi:'매출 성장률',text:'봄맞이 기획전 운영',result:'기획전 매출 1,200만원 달성',issue:'네이버 노출 순위 하락',next:'키워드 광고 예산 30% 증액',owner:'담당자',done:false},
-      {kpi:'광고 ROAS',text:'저효율 키워드 20개 중단 후 성과',result:'ROAS 2.8→3.1 개선',issue:'없음',next:'고효율 키워드 예산 추가 배분',owner:'담당자',done:false},
-      {kpi:'행사 성사율',text:'유통채널 행사 제안 3건 발송',result:'2건 성사, 1건 조건 협의중',issue:'1건 수수료율 과다 요구',next:'수수료 역제안 + 물량 조건 제시',owner:'담당자',done:false},
     ],
     issues:[
-      {date:'3/6',issue:'인기 SKU 재고 소진으로 3일 품절',cause:'판매 속도 예측 실패',action:'안전재고 2주분 확보 기준 수립',result:'',prevent:'주간 판매속도 모니터링 자동화'},
     ],
   },
 
@@ -4408,18 +4351,10 @@ const DEPTS = {
       {no:5,item:'발주 처리 정확도',target:.99,actual:0,prev:0,trend:'',comment:'',isP:true,cat:'result'},
     ],
     monthly:[
-      {no:1,kpi:'출고 오류율',task:'출고 전 바코드 스캔 검증 도입',action:'전 출고건 바코드 대조 시행',due:'3/5',status:'예정'},
-      {no:2,kpi:'CS 발생율',task:'CS 발생 원인 Top5 분석 및 개선',action:'오배송/파손/수량오류 분류',due:'3/12',status:'예정',note:''},
-      {no:3,kpi:'반품율',task:'파손 저감 포장 개선',action:'완충재 추가 및 박스 규격 변경',due:'3/15',status:'예정',note:''},
-      {no:4,kpi:'발주 처리 정확도',task:'발주서 검증 체크리스트 적용',action:'수량/단가/납기 3중 체크',due:'3/5',status:'예정'},
     ],
     weekly:[
-      {kpi:'출고 오류율',text:'바코드 스캔 검증 운영',result:'출고 120건 중 오류 1건',issue:'라벨 프린터 불량',next:'프린터 점검 및 교체 검토',owner:'담당자',done:false},
-      {kpi:'반품율',text:'포장 개선 시범 적용',result:'파손 반품 8건→3건 감소',issue:'완충재 비용 증가 건당 +200원',next:'비용 대비 효과 분석',owner:'담당자',done:false},
-      {kpi:'CS 처리시간',text:'자동응답 10개 항목 설정 완료',result:'단순 문의 40% 자동 처리',issue:'없음',next:'추가 10개 항목 설정 예정',owner:'담당자',done:false},
     ],
     issues:[
-      {date:'3/4',issue:'동일 주문 2건 중복 출고',cause:'시스템 중복 주문 필터 미작동',action:'중복 주문 자동 알림 기능 개발 요청',result:'',prevent:'주문 접수 시 중복 체크 로직 추가'},
     ],
   },
 
@@ -4437,19 +4372,10 @@ const DEPTS = {
       {no:6,item:'스크롤 도달률',target:.70,actual:0,prev:0,trend:'',comment:'',isP:true,cat:'result'},
     ],
     monthly:[
-      {no:1,kpi:'작업 기한 준수율',task:'디자인 요청서 양식 표준화',action:'레퍼런스+마감일 필수 기재',due:'3/5',status:'예정'},
-      {no:2,kpi:'상세페이지 체류시간',task:'상위 10개 SKU 상세페이지 리뉴얼',action:'스토리텔링 구조 + 동영상 삽입',due:'3/25',status:'예정',note:''},
-      {no:3,kpi:'패키지 오류 건수',task:'패키지 시안 최종 검수 체크리스트 도입',action:'텍스트/색상/바코드/규격 4중 체크',due:'3/8',status:'예정'},
-      {no:4,kpi:'이탈률',task:'첫 화면 후킹 요소 강화',action:'핵심 혜택 3초 내 전달 구조 설계',due:'3/20',status:'예정'},
     ],
     weekly:[
-      {kpi:'작업 기한 준수율',text:'이번주 작업 8건 진행',result:'7건 기한 내 완료, 1건 1일 지연',issue:'긴급 요청 3건 끼어들어 스케줄 조정',next:'긴급 요청 별도 슬롯 확보 (주 2건)',owner:'담당자',done:false},
-      {kpi:'이탈률/스크롤도달률',text:'A/B테스트 2건 결과 분석',result:'이탈률 5%p 감소, 스크롤 도달률 8%p 증가',issue:'없음',next:'성공 패턴 다른 SKU에 확대 적용',owner:'담당자',done:false},
-      {kpi:'패키지 오류',text:'신제품 패키지 2건 최종 검수',result:'1건 통과, 1건 바코드 위치 수정',issue:'바코드 규격 가이드 미참조',next:'패키지 검수 시 바코드 규격 체크 추가',owner:'담당자',done:false},
     ],
     issues:[
-      {date:'3/9',issue:'패키지 색상 불일치로 재인쇄 발생',cause:'모니터 vs 인쇄 색상 차이 미검증',action:'인쇄 전 색상 교정지 확인 의무화',result:'',prevent:'디지털 컬러코드+실물 교정지 이중 확인'},
-      {date:'3/16',issue:'긴급 요청으로 기존 일정 3건 지연',cause:'긴급 요청 우선순위 기준 없음',action:'긴급 슬롯 주 2건 확보, 초과 시 일정 조정 합의',result:'',prevent:'긴급 요청 접수 기준 명문화'},
     ],
   },
 
@@ -4467,20 +4393,10 @@ const DEPTS = {
       {no:6,item:'신규 아이템 제안 건수',target:3,actual:0,prev:0,trend:'',comment:'',unit:'건',cat:'activity'},
     ],
     monthly:[
-      {no:1,kpi:'개발 일정 준수율',task:'주간 연구 진척 보고 체계 구축',action:'매주 금요일 진척보고서 제출',due:'3/5',status:'예정'},
-      {no:2,kpi:'업체 응답 소요일',task:'협력업체 응답 기한 합의',action:'견적/샘플/시험 요청 시 응답기한 명시',due:'3/10',status:'예정',note:''},
-      {no:3,kpi:'과제 신청 건수',task:'2분기 정부과제 공고 모니터링',action:'NTIS/중기부 공고 주 1회 확인',due:'상시',status:'예정',note:''},
-      {no:4,kpi:'신규 아이템 제안',task:'시장 트렌드 분석→신규 아이템 발굴',action:'원료/제형 트렌드 보고서 작성',due:'3/20',status:'예정'},
-      {no:5,kpi:'개발 일정 준수율',task:'기능성 원료 B 안정성 테스트 완료',action:'3개월 가속시험 최종 분석',due:'3/25',status:'예정'},
     ],
     weekly:[
-      {kpi:'개발 일정 준수율',text:'5개 과제 주간 진척 점검',result:'4개 일정 준수, 1개 1주 지연',issue:'외부 시험기관 결과 지연',next:'시험기관 독촉+대체 기관 검토',owner:'담당자',done:false},
-      {kpi:'연구일지 작성율',text:'이번주 연구일지 작성 현황',result:'5일 중 4일 작성 (금요일 미작성)',issue:'금요일 외부 미팅으로 미작성',next:'외부 미팅일도 간략 작성 원칙 수립',owner:'담당자',done:false},
-      {kpi:'신규 아이템 제안',text:'원료 트렌드 분석 보고서 작성',result:'기능성 원료 3개 트렌드 분석 완료',issue:'없음',next:'2건 아이템 제안서 작성 예정',owner:'담당자',done:false},
     ],
     issues:[
-      {date:'3/8',issue:'가속시험 샘플 온도 관리 실패→재시험',cause:'항온항습기 온도 센서 오작동',action:'장비 정기 점검 주기 월→격주 변경',result:'',prevent:'장비 점검 체크리스트 작성 및 부착'},
-      {date:'3/20',issue:'정부과제 보고서 양식 변경 미인지',cause:'NTIS 공지 미확인',action:'정부과제 관련 공지 주 1회 확인 의무화',result:'',prevent:'NTIS 알림 메일 설정'},
     ],
   },
 };
@@ -4535,6 +4451,11 @@ if (!STATE.dailyLogs) STATE.dailyLogs = {};
 let syncUnsubscribe = null;
 
 async function syncToFirebase(uid) {
+  // 비로그인 시: 로컬 저장은 완료, 팀 동기화만 안내
+  if (!window._currentUser) {
+    showToast('💾 내 기기에 저장됨 · 팀 공유는 로그인 후 가능');
+    return;
+  }
   if (!window._syncEnabled || !window._db) return;
   const { doc: fDoc, setDoc } = window._firestore;
   const resolvedUid = uid || (window._currentUser && window._currentUser.uid);
@@ -4627,9 +4548,12 @@ function setSyncStatus(status) {
     txt.textContent = '동기화 중...';
     bar.className = 'sync-bar show';
     bar.textContent = '🔄 동기화 중...';
+  } else if (status === 'nologin') {
+    if (txt) txt.textContent = '로그인하면 팀 동기화';
+    if (bar) { bar.className = 'sync-bar'; bar.textContent = ''; }
   } else {
-    txt.textContent = '오프라인 모드';
-    bar.className = 'sync-bar';
+    if (txt) txt.textContent = '오프라인 모드';
+    if (bar) { bar.className = 'sync-bar'; bar.textContent = ''; }
   }
 }
 
@@ -6298,6 +6222,17 @@ function applyRoleUI() {
     updateLastBackupInfo();
     checkAutoBackup();
   }
+  // 비로그인 시 동기화 상태 안내
+  const syncTxt = document.getElementById('syncStatusText');
+  if (syncTxt) {
+    if (!window._currentUser) {
+      syncTxt.textContent = '로그인하면 팀 동기화';
+      syncTxt.style.color = 'var(--txt3)';
+    } else {
+      syncTxt.style.color = '';
+    }
+  }
+
 }
 window.applyRoleUI = applyRoleUI;
 
@@ -7143,6 +7078,8 @@ if (document.readyState === 'loading') {
 } else {
   setTimeout(doInit, 50);
 }
+
+
 
 
 
