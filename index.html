@@ -1458,6 +1458,9 @@ _fbAuth.onAuthStateChanged(async function(user) {
 
 
 
+
+
+
 const DEPT_OWNERS = {
   '회계':     '정보라',
   '무역1':    '카므란',
@@ -1563,11 +1566,13 @@ function canEdit(deptName) {
  *  비로그인은 로컬 모드이므로 🔒 표시 안 함
  */
 function isReadOnly(deptName) {
-  if (!window._currentUser) return false;  // 비로그인 → 로컬 모드, 🔒 없음
+  // 비로그인: 버튼 표시 (저장 시 로컬 모드 안내)
+  if (!window._currentUser) return false;
   const role = getUserRole();
-  if (role === 'admin') return false;
-  if (role === deptName) return false;
-  return true;  // 로그인했는데 권한 없음
+  if (role === 'admin') return false;   // 관리자 → 전체 부서 편집
+  if (role === deptName) return false;  // 본인 부서원 → 편집
+  // 로그인했지만 타부서·미등록 이메일 → 조회전용 (버튼 숨김)
+  return true;
 }
 
 /** 현재 사용자의 소속 부서명 (관리자·비인가자는 null) */
@@ -2219,7 +2224,7 @@ function closeMonthlyForm(safeId) {
 
 function saveMonthlyPlan(deptName) {
   // ── 권한 체크 ──
-  if (window._currentUser && !canEdit(deptName)) {
+  if (!canEdit(deptName)) {
     showToast('🔒 ' + deptName + ' 편집 권한이 없습니다. 관리자에게 이메일 등록을 요청하세요.');
     return;
   }
@@ -2482,7 +2487,7 @@ function weeklyKpiHint(deptKey, kpiItem) {
 
 function saveWeeklyAct(deptKey) {
   // ── 권한 체크 ──
-  if (window._currentUser && !canEdit(deptKey)) {
+  if (!canEdit(deptKey)) {
     showToast('🔒 ' + deptKey + ' 편집 권한이 없습니다. 관리자에게 이메일 등록을 요청하세요.');
     return;
   }
@@ -2667,7 +2672,7 @@ function closeIssueForm(safeId) {
 
 function saveIssue(deptName) {
   // ── 권한 체크 ──
-  if (window._currentUser && !canEdit(deptName)) {
+  if (!canEdit(deptName)) {
     showToast('🔒 ' + deptName + ' 편집 권한이 없습니다. 관리자에게 이메일 등록을 요청하세요.');
     return;
   }
@@ -3200,7 +3205,7 @@ function previewRate(deptName, idx, val, isP, target, low) {
 
 function saveDeptInput(deptName) {
   // ── 권한 체크 ──
-  if (window._currentUser && !canEdit(deptName)) {
+  if (!canEdit(deptName)) {
     showToast('🔒 ' + deptName + ' 편집 권한이 없습니다. 관리자에게 이메일 등록을 요청하세요.');
     return;
   }
@@ -4354,15 +4359,11 @@ function applyRoleUI() {
   const adminBadgeEl = document.getElementById('adminRoleBadge');
   if (adminBadgeEl) adminBadgeEl.style.display = admin ? 'inline-flex' : 'none';
 
-  // 현재 활성화된 부서 페이지 재렌더 (권한 버튼 갱신)
+  // 권한 변경 시 모든 부서 탭 재렌더 (버튼 표시/숨김 즉시 반영)
   if (window.renderDeptPage) {
-    const activeDeptPage = document.querySelector('.page.active[id^="page-dept-"]');
-    if (activeDeptPage) {
-      const activeDept = activeDeptPage.id.replace('page-dept-', '');
-      try { renderDeptPage(activeDept); } catch(e) {}
-    }
-    // 회계 경영지표 탭은 항상 갱신
-    try { renderDeptPage('회계'); } catch(e) {}
+    Object.keys(DEPTS).forEach(name => {
+      try { renderDeptPage(name); } catch(e) {}
+    });
   }
 
   // 관리자 데이터 관리 페이지 렌더
@@ -5323,6 +5324,9 @@ if (document.readyState === 'loading') {
 } else {
   setTimeout(doInit, 50);
 }
+
+
+
 
 
 
