@@ -354,26 +354,26 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 .daily-metric-kpi{font-size:10px;color:var(--txt3)}
 /* 미니 달력 */
 .daily-cal-wrap{background:#f0f7ff;border:1px solid #90caf9;border-radius:10px;padding:10px 12px;margin-bottom:12px}
-.mini-cal{width:100%}
-.mini-cal-header{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px}
-.mini-cal-dow{text-align:center;font-size:9px;font-weight:700;color:var(--txt3);padding:2px 0}
-.mini-cal-body{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-.mini-cal-cell{position:relative;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;border-radius:4px;color:var(--txt2)}
-.mini-cal-cell.logged{background:#c8e6c9;color:var(--green);font-weight:700}
-.mini-cal-cell.logged-ok{background:#c8e6c9;color:#1b5e20;font-weight:700;cursor:pointer}
-.mini-cal-cell.logged-warn{background:#fff9c4;color:#f57f17;font-weight:700;cursor:pointer}
-.mini-cal-cell.logged-danger{background:#ffcdd2;color:#b71c1c;font-weight:700;cursor:pointer}
-.mini-cal-cell.logged-ok:hover,.mini-cal-cell.logged-warn:hover,.mini-cal-cell.logged-danger:hover{filter:brightness(.92);outline:2px solid rgba(0,0,0,.15)}
-.mini-cal-cell.today{background:var(--blue);color:#fff;font-weight:700;border-radius:50%}
-.mini-cal-cell.today.logged-ok{background:var(--green);color:#fff}
-.mini-cal-cell.today.logged-warn{background:#f9a825;color:#fff}
-.mini-cal-cell.today.logged-danger{background:var(--red);color:#fff}
-.mini-cal-cell.future{color:var(--txt3);opacity:.4}
-.mini-cal-cell.empty{background:transparent}
-.cal-dot{width:5px;height:5px;border-radius:50%;position:absolute;bottom:2px}
-.cal-dot.ok{background:var(--green)}
-.cal-dot.warn{background:#f9a825}
-.cal-dot.danger{background:var(--red)}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* 팀 현황 이슈 강조 */
 .team-daily-item.has-issue{border:1.5px solid var(--red);background:#fff8f8}
 .team-daily-item.pinned{order:-1}
@@ -767,26 +767,26 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 .daily-metric-kpi{font-size:10px;color:var(--txt3)}
 /* 미니 달력 */
 .daily-cal-wrap{background:#f0f7ff;border:1px solid #90caf9;border-radius:10px;padding:10px 12px;margin-bottom:12px}
-.mini-cal{width:100%}
-.mini-cal-header{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px}
-.mini-cal-dow{text-align:center;font-size:9px;font-weight:700;color:var(--txt3);padding:2px 0}
-.mini-cal-body{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-.mini-cal-cell{position:relative;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;border-radius:4px;color:var(--txt2)}
-.mini-cal-cell.logged{background:#c8e6c9;color:var(--green);font-weight:700}
-.mini-cal-cell.logged-ok{background:#c8e6c9;color:#1b5e20;font-weight:700;cursor:pointer}
-.mini-cal-cell.logged-warn{background:#fff9c4;color:#f57f17;font-weight:700;cursor:pointer}
-.mini-cal-cell.logged-danger{background:#ffcdd2;color:#b71c1c;font-weight:700;cursor:pointer}
-.mini-cal-cell.logged-ok:hover,.mini-cal-cell.logged-warn:hover,.mini-cal-cell.logged-danger:hover{filter:brightness(.92);outline:2px solid rgba(0,0,0,.15)}
-.mini-cal-cell.today{background:var(--blue);color:#fff;font-weight:700;border-radius:50%}
-.mini-cal-cell.today.logged-ok{background:var(--green);color:#fff}
-.mini-cal-cell.today.logged-warn{background:#f9a825;color:#fff}
-.mini-cal-cell.today.logged-danger{background:var(--red);color:#fff}
-.mini-cal-cell.future{color:var(--txt3);opacity:.4}
-.mini-cal-cell.empty{background:transparent}
-.cal-dot{width:5px;height:5px;border-radius:50%;position:absolute;bottom:2px}
-.cal-dot.ok{background:var(--green)}
-.cal-dot.warn{background:#f9a825}
-.cal-dot.danger{background:var(--red)}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* 팀 현황 이슈 강조 */
 .team-daily-item.has-issue{border:1.5px solid var(--red);background:#fff8f8}
 .team-daily-item.pinned{order:-1}
@@ -1324,7 +1324,6 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script>
-
 const firebaseConfig = {
   apiKey: "AIzaSyB4RjMGO5zfNuwwk8SxnjYjwjqwpUIVOTA",
   authDomain: "b2s-kpi-7c8c0.firebaseapp.com",
@@ -1333,11 +1332,10 @@ const firebaseConfig = {
   messagingSenderId: "843804836870",
   appId: "1:843804836870:web:49d50be534c21eb97baf87"
 };
-
 firebase.initializeApp(firebaseConfig);
-const _fbDb   = firebase.firestore();
-const _fbAuth = firebase.auth();
-const _fbProvider = new firebase.auth.GoogleAuthProvider();
+var _fbDb       = firebase.firestore();
+var _fbAuth     = firebase.auth();
+var _fbProvider = new firebase.auth.GoogleAuthProvider();
 
 window._db          = _fbDb;
 window._auth        = _fbAuth;
@@ -1346,67 +1344,61 @@ window._firestore   = {
   doc:        function(db, col, id) { return _fbDb.collection(col).doc(id); },
   setDoc:     function(ref, data, opts) { return opts ? ref.set(data, opts) : ref.set(data); },
   getDoc:     function(ref) { return ref.get(); },
-  onSnapshot: function(ref, cb) { return ref.onSnapshot(cb); },
+  onSnapshot: function(ref, cb, err) { return ref.onSnapshot(cb, err||function(){}); },
   collection: function(db, col) { return _fbDb.collection(col); },
   getDocs:    function(ref) { return ref.get(); },
 };
 window._currentUser = null;
 
-window._googleSignIn = async function() {
-  try {
-    var result = await _fbAuth.signInWithPopup(_fbProvider);
-    return result.user;
-  } catch(e) { console.error('Google 로그인 실패:', e); throw e; }
+window._googleSignIn = function() {
+  return _fbAuth.signInWithPopup(_fbProvider)
+    .then(function(r){ return r.user; })
+    .catch(function(e){ console.error('Google 로그인 실패:', e); throw e; });
 };
+window._signOut = function() { return _fbAuth.signOut(); };
 
-window._signOut = async function() { await _fbAuth.signOut(); };
-
-_fbAuth.onAuthStateChanged(async function(user) {
+_fbAuth.onAuthStateChanged(function(user) {
   window._currentUser = user;
-  setTimeout(function() { if(window.applyRoleUI) window.applyRoleUI(); }, 250);
-  var bar       = document.getElementById('userBar');
-  var loginBtn  = document.getElementById('loginGoogleBtn');
-  var logoutBtn = document.getElementById('logoutBtn');
-  var syncText  = document.getElementById('syncStatusText');
+  setTimeout(function() { if (window.applyRoleUI) window.applyRoleUI(); }, 250);
+
+  var bar      = document.getElementById('userBar');
+  var syncText = document.getElementById('syncStatusText');
 
   if (user) {
-    // 권한 할당 및 전역 변수 세팅
-    var userRole  = (window.USER_PERMISSIONS && window.USER_PERMISSIONS[user.email]) || 'readonly';
-    window._currentUserRole = userRole;
-    window._currentDept     = (userRole !== 'admin' && userRole !== 'readonly') ? userRole : null;
-    // 비인가 사용자 토스트 안내
-    if (userRole === 'readonly') {
-      setTimeout(function(){ if(window.showToast) window.showToast('👁 조회 전용으로 접속되었습니다. 편집 권한이 없습니다.'); }, 500);
-    } else if (userRole !== 'admin') {
-      setTimeout(function(){ if(window.showToast) window.showToast('👤 ' + userRole + ' 부서 편집 권한으로 접속하였습니다.'); }, 500);
-    }
-    var isAdminUser = userRole === 'admin';
-    var adminBadge  = isAdminUser
+    var isAdm   = window.ADMIN_EMAILS && window.ADMIN_EMAILS.includes(user.email);
+    var admBadge = isAdm
       ? '<span style="background:#fff8e1;color:#e65100;border:1px solid #ffe082;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:800;margin-left:2px">관리자</span>'
       : '';
     if (bar) {
-      bar.innerHTML = '<img src="' + (user.photoURL||'') + '" style="width:24px;height:24px;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\'">'
-        + '<span style="font-size:11px;color:var(--txt2)">' + (user.displayName||user.email) + '</span>' + adminBadge
+      var photoHtml = user.photoURL
+        ? '<img src="' + user.photoURL + '" style="width:24px;height:24px;border-radius:50%;object-fit:cover">'
+        : '';
+      bar.innerHTML = photoHtml
+        + '<span style="font-size:11px;color:var(--txt2)">' + (user.displayName || user.email) + '</span>'
+        + admBadge
         + '<button onclick="window._signOut()" style="background:rgba(239,83,80,.15);color:var(--red);border:1px solid var(--red);border-radius:6px;padding:2px 8px;font-size:10px;cursor:pointer;font-family:inherit">로그아웃</button>';
     }
-    if (loginBtn)  loginBtn.style.display  = 'none';
-    if (logoutBtn) logoutBtn.style.display = 'block';
-    if (syncText)  syncText.textContent    = (user.displayName || user.email) + ' · 동기화 중';
+    if (syncText) syncText.textContent = (user.displayName || user.email) + ' · 동기화 중';
     if (window.setupUserSync) window.setupUserSync(user.uid);
+    setTimeout(function() { if (window.showToast) window.showToast('✅ ' + (user.displayName || user.email) + ' 로그인됨'); }, 400);
   } else {
-    if (bar) bar.innerHTML = '<button id="loginGoogleBtn" onclick="window._googleSignIn()"'
-      + ' style="display:flex;align-items:center;gap:6px;background:#fff;color:#333;border:1px solid #ddd;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">'
-      + '<svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>'
-      + 'Google로 로그인</button>';
-    if (logoutBtn) logoutBtn.style.display = 'none';
-    if (syncText)  syncText.textContent    = '로그인하면 동기화됩니다';
-    setTimeout(function() { if(window.applyRoleUI) window.applyRoleUI(); }, 100);
+    if (bar) {
+      bar.innerHTML = '<button onclick="window._googleSignIn()" style="display:flex;align-items:center;gap:6px;background:#fff;color:#333;border:1px solid #ddd;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">'
+        + '<svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>'
+        + 'Google로 로그인</button>';
+    }
+    if (syncText) syncText.textContent = '로그인하면 팀 동기화됩니다';
+    setTimeout(function() { if (window.applyRoleUI) window.applyRoleUI(); }, 100);
   }
 });
-
-
 </script>
 <script>
+
+
+
+
+
+
 
 
 
@@ -1503,93 +1495,28 @@ window.ADMIN_EMAILS = [
 //  '부서명' → 해당 부서만 편집 가능
 //  명단 외  → 조회(Read-Only) 전용
 // ══════════════════════════════════════════════════════════════
-const USER_PERMISSIONS = {
-  'b2scompany2@gmail.com': 'admin',       // ✅ 정진우 대표님 — 전체 관리자
-
-  // ──────────────────────────────────────────────────────────────
-  //  ⚠️  아래 이메일을 각 담당자의 실제 Google 계정으로 교체하세요
-  //  교체 후 GitHub에 다시 업로드하면 즉시 적용됩니다
-  // ──────────────────────────────────────────────────────────────
-
-  // 회계팀 담당자 이메일 입력 (예: 'hong@gmail.com': '회계')
-  'accounting@b2scompany.com': '회계',
-
-  // 무역1팀 담당자 이메일 입력
-  'trade1@b2scompany.com':     '무역1',
-
-  // 무역2팀 담당자 이메일 입력
-  'trade2@b2scompany.com':     '무역2',
-
-  // 원료영업 담당자 이메일 입력
-  'sales@b2scompany.com':      '원료영업',
-
-  // 생산기획 담당자 이메일 입력 (예: 'song@gmail.com': '생산기획')
-  'production@b2scompany.com': '생산기획',
-
-  // MD 담당자 이메일 입력
-  'md@b2scompany.com':         'MD',
-
-  // CS발주 담당자 이메일 입력
-  'cs@b2scompany.com':         'CS발주',
-
-  // 디자인 담당자 이메일 입력
-  'design@b2scompany.com':     '디자인',
-
-  // 연구원 담당자 이메일 입력 (예: 'choi@gmail.com': '연구원')
-  'research@b2scompany.com':   '연구원',
-};
-window.USER_PERMISSIONS = USER_PERMISSIONS;
-
 /** 현재 로그인 사용자의 권한 반환: 'admin' | '부서명' | 'readonly' */
 function getUserRole() {
   const email = window._currentUser && window._currentUser.email;
-  if (!email) return 'readonly';
-  return USER_PERMISSIONS[email] || 'readonly';
+  if (!email) return 'guest';
+  if (window.ADMIN_EMAILS && window.ADMIN_EMAILS.includes(email)) return 'admin';
+  return 'editor';
 }
-
-/** deptName 부서의 편집 권한 여부
- *  - 비로그인: true (로컬 모드 — 저장 시 권한 안내)
- *  - admin: true (모든 부서)
- *  - 부서원: 본인 부서만 true
- *  - 로그인했지만 미등록 이메일: false (조회전용)
- */
 function canEdit(deptName) {
-  // 비로그인 → 로컬 모드로 허용 (저장 시 별도 처리)
-  if (!window._currentUser) return true;
-  const role = getUserRole();
-  if (role === 'admin') return true;
-  if (role === deptName) return true;
-  // 로그인했지만 명단에 없는 이메일 → 조회전용
-  return false;
-}
-
-/** 로그인했지만 해당 부서 편집 권한이 없는 경우 (탭 🔒 표시용)
- *  비로그인은 로컬 모드이므로 🔒 표시 안 함
- */
-function isReadOnly(deptName) {
-  // 비로그인: 버튼 표시 (저장 시 로컬 모드 안내)
-  if (!window._currentUser) return false;
-  const role = getUserRole();
-  if (role === 'admin') return false;   // 관리자 → 전체 부서 편집
-  if (role === deptName) return false;  // 본인 부서원 → 편집
-  // 로그인했지만 타부서·미등록 이메일 → 조회전용 (버튼 숨김)
   return true;
 }
-
-/** 현재 사용자의 소속 부서명 (관리자·비인가자는 null) */
+function isReadOnly(deptName) {
+  return false;
+}
 function getCurrentUserDept() {
   const role = getUserRole();
   return (role === 'admin' || role === 'readonly') ? null : role;
 }
 
 function isAdmin() {
-  return getUserRole() === 'admin';
+  const email = window._currentUser && window._currentUser.email;
+  return !!(email && window.ADMIN_EMAILS && window.ADMIN_EMAILS.includes(email));
 }
-
-
-
-
-
 function switchManualTab(tab, el) {
   document.querySelectorAll('.manual-tab').forEach(b => b.classList.remove('active'));
   if (el) el.classList.add('active');
@@ -1838,11 +1765,20 @@ const DEPTS = {
       {no:5,item:'과제 선정율',target:.50,actual:0,prev:0,trend:'',comment:'',isP:true,cat:'result'},
       {no:6,item:'신규 아이템 제안 건수',target:3,actual:0,prev:0,trend:'',comment:'',unit:'건',cat:'activity'},
     ],
-    monthly:[
+    monthly: [],
+    weekly:  [],
+    issues:  [],
+    checklist: [
+      { id:'labNote',   label:'오늘 연구일지 작성 완료',  kpi:'일일 연구일지 작성율' },
+      { id:'schedule',  label:'개발 일정 준수 확인',      kpi:'개발 일정 준수율' },
+      { id:'vendorRes', label:'업체 문의 당일 응답 완료', kpi:'업체 응답 평균 소요일' },
+      { id:'proposal',  label:'신규 아이디어/제안 검토',  kpi:'신규 아이템 제안 건수' },
     ],
-    weekly:[
-    ],
-    issues:[
+    metrics: [
+      { id:'labNoteCount', label:'연구일지 작성 여부',     unit:'건', kpi:'일일 연구일지 작성율',  type:'count' },
+      { id:'vendorDelay',  label:'업체 응답 소요일',       unit:'일', kpi:'업체 응답 평균 소요일', type:'total' },
+      { id:'newIdeas',     label:'오늘 신규 제안 건수',    unit:'건', kpi:'신규 아이템 제안 건수', type:'accumulate' },
+      { id:'taskDone',     label:'오늘 완료 개발 과제 수', unit:'건', kpi:'개발 일정 준수율',      type:'count' },
     ],
   },
 };
@@ -3606,12 +3542,7 @@ function dailyPageHTML(deptName) {
         onchange="autoSaveDaily('${deptName}','${today}')">${saved.memo||''}</textarea>
     </div>` : '';
 
-  // 이번달 달력 (아코디언용)
-  const thisMonth = new Date().toISOString().slice(0,7);
-  const monthLogs = Object.keys(STATE.dailyLogs || {})
-    .filter(k => k.startsWith(`daily_${deptName}_`) && k.includes(thisMonth))
-    .map(k => k.replace(`daily_${deptName}_`,''));
-  const calHTML = buildMiniCal(thisMonth, monthLogs, deptName);
+
 
   return `<div class="daily-wrap">
 
@@ -3661,41 +3592,18 @@ function dailyPageHTML(deptName) {
       ✅ 저장 완료 · KPI 자동 반영됨
     </div>
 
-    <!-- ④ [이력/현황 보기] 아코디언 -->
+    <!-- 팀 현황 아코디언 -->
     <div style="margin-top:16px;border-top:1px solid var(--bdr);padding-top:12px">
       <button class="btn" id="dailyHistBtn_${deptName}"
         onclick="toggleDailyHistPanel('${deptName}')"
         style="width:100%;background:var(--bg-3);color:var(--txt2);border:1px solid var(--bdr2);padding:9px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between">
-        <span>📋 이력 / 팀 현황 보기</span>
+        <span>👥 팀 작성 현황 보기</span>
         <span id="dailyHistArrow_${deptName}" style="font-size:10px;transition:transform .2s">▼</span>
       </button>
-
       <div id="dailyHistPanel_${deptName}" style="display:none;margin-top:8px;animation:fadeIn .2s">
-
-        <!-- 팀 현황 -->
-        <div style="margin-bottom:14px">
-          <div style="font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:6px;padding:6px 10px;background:var(--bg-3);border-radius:6px">
-            👥 팀 작성 현황
-          </div>
-          <div id="teamDailyWrap_${deptName}">
-            ${teamDailyStatusHTML(deptName, today)}
-          </div>
+        <div id="teamDailyWrap_${deptName}">
+          ${teamDailyStatusHTML(deptName, today)}
         </div>
-
-        <!-- 이번달 달력 -->
-        <div>
-          <div style="font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:6px;padding:6px 10px;background:var(--bg-3);border-radius:6px">
-            📆 ${thisMonth} 기록 현황
-            <span style="font-size:9px;font-weight:400;color:var(--txt3)"> · 날짜 클릭 시 해당 기록 로드</span>
-          </div>
-          <div style="display:flex;gap:8px;font-size:9px;margin-bottom:5px;flex-wrap:wrap">
-            <span style="display:inline-flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block"></span>정상(≥90%)</span>
-            <span style="display:inline-flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#f9a825;display:inline-block"></span>주의(≥70%)</span>
-            <span style="display:inline-flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#ef5350;display:inline-block"></span>위험/이슈</span>
-          </div>
-          ${calHTML}
-        </div>
-
       </div>
     </div>
 
@@ -3771,53 +3679,6 @@ function dailyHasIssue(dept, dateStr) {
     });
   }
   return hasKeyword || hasAlert;
-}
-
-function buildMiniCal(ym, loggedDates, deptName) {
-  var parts = ym.split('-');
-  var y = Number(parts[0]), m = Number(parts[1]);
-  var firstDay    = new Date(y, m-1, 1).getDay();
-  var daysInMonth = new Date(y, m, 0).getDate();
-  var todayFull   = new Date().toISOString().slice(0,10);
-
-  var html = '<div class="mini-cal"><div class="mini-cal-header">';
-  ['일','월','화','수','목','금','토'].forEach(function(d){
-    html += '<div class="mini-cal-dow">'+d+'</div>';
-  });
-  html += '</div><div class="mini-cal-body">';
-
-  for (var i=0; i<firstDay; i++) html += '<div class="mini-cal-cell empty"></div>';
-
-  for (var d=1; d<=daysInMonth; d++) {
-    var dateStr  = ym + '-' + String(d).padStart(2,'0');
-    var hasLog   = loggedDates.includes(dateStr);
-    var isToday  = (dateStr === todayFull);
-    var isFuture = (new Date(dateStr) > new Date(todayFull));
-
-    var statusCls = '';
-    var dotCls    = '';
-    var clickAttr = '';
-    var tooltip   = '';
-
-    if (hasLog && deptName && !isFuture) {
-      var st = getDailyKpiStatus(deptName, dateStr);
-      if (st === 'ok')     { statusCls = 'logged-ok';     dotCls = 'ok';     tooltip = '정상'; }
-      else if (st === 'warn')  { statusCls = 'logged-warn';   dotCls = 'warn';   tooltip = '주의'; }
-      else if (st === 'danger'){ statusCls = 'logged-danger'; dotCls = 'danger'; tooltip = '위험/이슈'; }
-      else                 { statusCls = 'logged-ok';     dotCls = 'ok';     tooltip = '기록됨'; }
-      clickAttr = ' onclick="loadDailyByDate(\'' + deptName + '\',\'' + dateStr + '\')" title="' + dateStr + ' · ' + tooltip + ' (클릭하면 기록 로드)"';
-    }
-
-    var classes = ['mini-cal-cell', statusCls, isToday?'today':'', isFuture?'future':'']
-      .filter(Boolean).join(' ');
-
-    html += '<div class="' + classes + '"' + clickAttr + '>'
-          + d
-          + (hasLog ? '<div class="cal-dot ' + dotCls + '"></div>' : '')
-          + '</div>';
-  }
-  html += '</div></div>';
-  return html;
 }
 
 function toggleDailyCheck(dept, checkId, dateStr) {
@@ -5321,6 +5182,12 @@ if (document.readyState === 'loading') {
 } else {
   setTimeout(doInit, 50);
 }
+
+
+
+
+
+
 
 
 
