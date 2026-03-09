@@ -38,6 +38,22 @@ const DEPT_OWNERS = {
 };
 
 
+
+function switchInputTab(tab, el) {
+  // 버튼 활성화
+  document.querySelectorAll('.input-tab').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  // 패널 전환
+  document.getElementById('ipanel-kpi').style.display    = tab==='kpi'    ? 'block' : 'none';
+  document.getElementById('ipanel-action').style.display = tab==='action' ? 'block' : 'none';
+  // 액션 탭 열릴 때 KPI ref 초기화 안내
+  if (tab === 'action') {
+    const ref = document.getElementById('waKpiRef');
+    if (ref && ref.children.length === 0) {
+      ref.innerHTML = '<div style="font-size:11px;color:var(--txt3);text-align:center;padding:10px">부서를 선택하면 KPI 항목이 표시됩니다</div>';
+    }
+  }
+}
 function autoFillOwner(selectId, ownerInputId) {
   const sel = document.getElementById(selectId);
   const inp = document.getElementById(ownerInputId);
@@ -516,6 +532,17 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 .team-daily-item:last-child{margin-bottom:0}
 .daily-metric-desc{font-size:9px;color:var(--txt3);margin-top:1px}
 
+
+/* 관리자 데이터 관리 */
+.admin-csv-btn{background:#fff;border:1.5px solid #ffe082;color:#e65100;font-size:12px;font-weight:600;padding:10px 8px;border-radius:8px;cursor:pointer;font-family:inherit;transition:all .15s;text-align:left}
+.admin-csv-btn:hover{background:#fff8e1;border-color:#e65100}
+
+
+/* 실적입력 페이지 탭 */
+.input-tab{flex:1;padding:8px 12px;font-size:12px;font-weight:600;color:var(--txt3);background:transparent;border:none;border-radius:7px;cursor:pointer;font-family:inherit;transition:all .2s}
+.input-tab.active{background:var(--blue);color:#fff;font-weight:700;box-shadow:0 2px 8px rgba(25,118,210,.3)}
+.input-tab:hover:not(.active){background:var(--bg-3);color:var(--txt2)}
+
 </style>
 </head>
 <body>
@@ -573,6 +600,7 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 
   <div class="ntab" data-page="weekly"><div class="ndot" style="background:var(--green)"></div>주간 점검</div>
   <div class="ntab" data-page="input"><div class="ndot" style="background:var(--txt3)"></div>실적 입력</div>
+  <div class="ntab admin-only-tab" data-page="admindata" style="display:none"><div class="ndot" style="background:#e65100"></div>🔐 데이터관리</div>
 </nav>
 
 <!-- CONTENT -->
@@ -676,6 +704,15 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 
 <!-- ══ INPUT ══ -->
 <div class="page" id="page-input">
+
+  <!-- 입력 페이지 탭 버튼 -->
+  <div style="display:flex;gap:4px;margin-bottom:12px;background:var(--bg-1);border-radius:10px;padding:4px;border:1px solid var(--bdr)">
+    <button class="input-tab active" id="itab-kpi" onclick="switchInputTab('kpi',this)">📝 실적 입력</button>
+    <button class="input-tab" id="itab-action" onclick="switchInputTab('action',this)">➕ 액션 추가</button>
+  </div>
+
+  <!-- 실적 입력 패널 -->
+  <div id="ipanel-kpi">
   <div class="card">
     <div class="sec-lbl">📝 월간 실적 입력</div>
     <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -712,9 +749,11 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
       <button class="btn" style="background:var(--bg-4);color:var(--txt2)" onclick="clearInput()">초기화</button>
     </div>
   </div>
+  </div><!-- /ipanel-kpi -->
 
-  <!-- Weekly Action Input -->
-  <div class="card" style="margin-top:14px">
+  <!-- ══ 액션 추가 패널 ══ -->
+  <div id="ipanel-action" style="display:none">
+  <div class="card">
     <div class="sec-lbl">➕ 주간 액션 추가</div>
 
     <!-- ① 부서 선택 + KPI 참고 패널 -->
@@ -775,6 +814,58 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
       <div class="fg"><label class="fl">다음 조치</label><input type="text" class="fc" id="aNxt" placeholder="다음 주 조치"></div>
     </div>
     <button class="btn btn-p" onclick="addAction()" style="margin-top:6px;width:100%">➕ 액션 저장</button>
+  </div>
+  </div><!-- /ipanel-action -->
+
+</div>
+
+<!-- ══ ADMIN DATA ══ -->
+<div class="page" id="page-admindata">
+  <div class="card" style="border:2px solid #ffe082">
+    <div class="card-hdr">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="card-t" style="color:#e65100">🔐 관리자 데이터 관리</div>
+        <span style="background:#fff8e1;color:#e65100;border:1px solid #ffe082;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:800">관리자 전용</span>
+      </div>
+      <button class="btn" onclick="refreshAdminData()" style="background:#fff8e1;color:#e65100;border:1px solid #ffe082;font-size:11px;padding:4px 10px">🔄 새로고침</button>
+    </div>
+
+    <!-- 전체 현황 요약 -->
+    <div id="adminSummaryGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:16px"></div>
+
+    <!-- CSV 다운로드 섹션 -->
+    <div style="font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:10px;padding-top:12px;border-top:1px solid var(--bdr)">📥 전체 데이터 CSV 다운로드</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <button class="btn admin-csv-btn" onclick="adminDownload('all_kpi')">📊 전체 KPI 실적</button>
+      <button class="btn admin-csv-btn" onclick="adminDownload('daily_all')">📅 일일업무 전체</button>
+      <button class="btn admin-csv-btn" onclick="adminDownload('weekly_all')">✅ 주간 액션 전체</button>
+      <button class="btn admin-csv-btn" onclick="adminDownload('mgmt')">📈 경영지표 이력</button>
+      <button class="btn admin-csv-btn" onclick="adminDownload('full_backup')" style="grid-column:1/-1;background:#fff8e1;color:#e65100;border-color:#ffe082;font-weight:800">
+        💾 전체 데이터 통합 백업 (JSON)
+      </button>
+    </div>
+
+    <!-- 자동 백업 설정 -->
+    <div style="font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:10px;padding-top:12px;border-top:1px solid var(--bdr)">⏰ 자동 백업 설정</div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+        <input type="checkbox" id="autoBackupToggle" onchange="toggleAutoBackup(this.checked)"
+          style="width:16px;height:16px;accent-color:var(--blue)">
+        매일 자동 백업 (로그인 시)
+      </label>
+      <div style="font-size:11px;color:var(--txt3)" id="lastBackupInfo">마지막 백업: 없음</div>
+    </div>
+
+    <!-- 일일 업무 현황 테이블 -->
+    <div style="font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:8px;padding-top:12px;border-top:1px solid var(--bdr)">📋 최근 일일업무 기록</div>
+    <div style="overflow-x:auto">
+      <table class="kt" style="width:100%;min-width:500px" id="adminDailyTable">
+        <thead><tr>
+          <th>날짜</th><th>부서</th><th>작성자</th><th>체크완료</th><th>영업활동</th><th>메모</th>
+        </tr></thead>
+        <tbody id="adminDailyBody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -2332,6 +2423,189 @@ function viewDailyHistory(dept) {
   showToast(`📋 ${dept} 최근 ${logs.length}일 기록 있음`);
 }
 
+
+// ════════════════════════════════════════════════════════
+//  관리자 데이터 관리 기능
+// ════════════════════════════════════════════════════════
+
+function refreshAdminData() {
+  if (!isAdmin()) return;
+  renderAdminSummary();
+  renderAdminDailyTable();
+  updateLastBackupInfo();
+  showToast('🔄 데이터 새로고침 완료');
+}
+
+function renderAdminSummary() {
+  const grid = document.getElementById('adminSummaryGrid');
+  if (!grid) return;
+  const dailyCount  = Object.keys(STATE.dailyLogs || {}).length;
+  const weeklyCount = (STATE.weeklyActions || []).length;
+  const deptCount   = Object.keys(DEPTS).length;
+  const thisMonth   = new Date().toISOString().slice(0,7);
+  const todayLogs   = Object.keys(STATE.dailyLogs || {}).filter(k => k.includes(new Date().toISOString().slice(0,10))).length;
+  const authors     = [...new Set(Object.values(STATE.dailyLogs || {}).map(v => v.authorName).filter(Boolean))];
+
+  const items = [
+    { icon:'📅', label:'일일 기록 총계',  value: dailyCount + '건' },
+    { icon:'✅', label:'주간 액션',       value: weeklyCount + '건' },
+    { icon:'👥', label:'참여 작성자',     value: authors.length + '명' },
+    { icon:'📌', label:'오늘 작성',       value: todayLogs + '건' },
+    { icon:'🗄️', label:'부서 수',         value: deptCount + '개' },
+    { icon:'💾', label:'데이터 크기',     value: (JSON.stringify(STATE).length / 1024).toFixed(1) + 'KB' },
+  ];
+  grid.innerHTML = items.map(i => `
+    <div style="background:#fffdf5;border:1px solid #ffe082;border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:20px;margin-bottom:4px">${i.icon}</div>
+      <div style="font-size:9px;color:var(--txt3);margin-bottom:4px">${i.label}</div>
+      <div style="font-size:15px;font-weight:800;color:#e65100">${i.value}</div>
+    </div>`).join('');
+}
+
+function renderAdminDailyTable() {
+  const tbody = document.getElementById('adminDailyBody');
+  if (!tbody) return;
+  const logs = Object.entries(STATE.dailyLogs || {})
+    .map(([k,v]) => ({...v, _key: k}))
+    .sort((a,b) => (b.savedAt||'').localeCompare(a.savedAt||''))
+    .slice(0, 50);
+
+  if (!logs.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--txt3)">기록 없음</td></tr>'; return; }
+
+  tbody.innerHTML = logs.map(log => {
+    const tasks = DAILY_TASKS[log.dept] || { checklist:[], metrics:[] };
+    const checkDone  = tasks.checklist.filter(t => log.checklist?.[t.id]).length;
+    const checkTotal = tasks.checklist.length;
+    const salesActs  = log.metrics?.salesActs || log.metrics?.visits || '-';
+    const memo = (log.memo || '').slice(0, 30) + ((log.memo||'').length > 30 ? '…' : '');
+    const dateStr = log.date || log._key.split('_')[2] || '-';
+    return `<tr>
+      <td style="font-weight:700;color:var(--blue);white-space:nowrap">${dateStr}</td>
+      <td>${log.dept || '-'}</td>
+      <td><strong>${log.authorName || '-'}</strong></td>
+      <td><span style="color:${checkDone===checkTotal&&checkTotal>0?'var(--green)':'var(--amber)'}">${checkDone}/${checkTotal}</span></td>
+      <td style="text-align:center">${salesActs}</td>
+      <td style="font-size:10px;color:var(--txt3)">${memo}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── CSV 다운로드 ──
+function adminDownload(type) {
+  if (!isAdmin()) { showToast('⚠️ 관리자만 다운로드 가능합니다'); return; }
+  const now = new Date();
+  const ds  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+
+  if (type === 'daily_all') {
+    const headers = ['날짜','부서','작성자','이메일','방문건수','영업활동','문의수신','응답완료','샘플전환','디자인완료','수정건수','오류건수','메모','저장시간'];
+    const rows = [headers.join(',')];
+    Object.values(STATE.dailyLogs || {})
+      .sort((a,b) => (b.date||'').localeCompare(a.date||''))
+      .forEach(log => {
+        rows.push([
+          log.date||'', log.dept||'', log.authorName||'', log.authorEmail||'',
+          log.metrics?.visits||0, log.metrics?.salesActs||0,
+          log.metrics?.inquiries||0, log.metrics?.responded||0, log.metrics?.samples||0,
+          log.metrics?.completedWorks||0, log.metrics?.revisions||0, log.metrics?.errors||0,
+          (log.memo||'').replace(/,/g,' '),
+          log.savedAt ? new Date(log.savedAt).toLocaleString('ko-KR') : '',
+        ].map(csvEscape).join(','));
+      });
+    downloadBlob(rows.join('\n'), `B2S_일일업무_전체_${ds}.csv`);
+
+  } else if (type === 'weekly_all') {
+    const headers = ['KPI','담당자','실행내용','결과','발생문제','다음조치','완료여부'];
+    const rows = [headers.join(',')];
+    (STATE.weeklyActions || []).forEach(a => {
+      rows.push([a.kpi,a.owner,a.text,a.result,a.issue,a.next,a.done?'완료':'미완료'].map(csvEscape).join(','));
+      (a.extra||[]).forEach(ex => {
+        rows.push([a.kpi,a.owner,ex.text,ex.result,'','',''].map(csvEscape).join(','));
+      });
+    });
+    downloadBlob(rows.join('\n'), `B2S_주간액션_전체_${ds}.csv`);
+
+  } else if (type === 'mgmt') {
+    downloadMgmtCSV();
+
+  } else if (type === 'all_kpi') {
+    downloadCSV('all_kpi');
+
+  } else if (type === 'full_backup') {
+    // 전체 JSON 백업
+    const backup = {
+      exportedAt:   new Date().toISOString(),
+      exportedBy:   window._currentUser?.email || 'admin',
+      version:      'v5',
+      state:        STATE,
+      depts_meta:   Object.keys(DEPTS),
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `B2S_KPI_전체백업_${ds}.json`; a.click();
+    URL.revokeObjectURL(url);
+    // 백업 시간 기록
+    localStorage.setItem('lastAdminBackup', new Date().toISOString());
+    updateLastBackupInfo();
+    showToast('💾 전체 데이터 JSON 백업 완료');
+    return;
+  }
+}
+
+// ── 자동 백업 ──
+function toggleAutoBackup(enabled) {
+  localStorage.setItem('autoBackupEnabled', enabled ? '1' : '0');
+  showToast(enabled ? '⏰ 자동 백업 활성화' : '자동 백업 비활성화');
+}
+
+function checkAutoBackup() {
+  if (!isAdmin()) return;
+  const enabled = localStorage.getItem('autoBackupEnabled') === '1';
+  const toggle  = document.getElementById('autoBackupToggle');
+  if (toggle) toggle.checked = enabled;
+  if (!enabled) return;
+
+  const INTERVAL_MS = 60 * 60 * 1000; // 1시간
+  const last = localStorage.getItem('lastAdminBackup');
+  const now  = Date.now();
+  const lastTime = last ? new Date(last).getTime() : 0;
+  const remaining = INTERVAL_MS - (now - lastTime);
+
+  if (remaining <= 0) {
+    // 1시간 이상 경과 → 즉시 백업
+    setTimeout(() => {
+      adminDownload('full_backup');
+      showToast('⏰ 자동 백업 완료 (1시간 주기)');
+    }, 2000);
+  } else {
+    // 남은 시간 후 백업 예약
+    setTimeout(() => {
+      adminDownload('full_backup');
+      showToast('⏰ 자동 백업 완료 (1시간 주기)');
+      // 이후 계속 1시간마다 반복
+      setInterval(() => {
+        adminDownload('full_backup');
+        showToast('⏰ 정기 자동 백업 완료');
+      }, INTERVAL_MS);
+    }, remaining);
+  }
+
+  // 자동 백업 예약 알림
+  const mins = Math.ceil(remaining / 60000);
+  if (remaining > 0) showToast(`⏰ 다음 자동 백업: ${mins}분 후`);
+}
+
+function updateLastBackupInfo() {
+  const el   = document.getElementById('lastBackupInfo');
+  const last = localStorage.getItem('lastAdminBackup');
+  if (!el) return;
+  if (last) {
+    el.textContent = '마지막 백업: ' + new Date(last).toLocaleString('ko-KR');
+  } else {
+    el.textContent = '마지막 백업: 없음';
+  }
+}
+
 // ────────────────────────────────────────────────────────
 //  관리자/사용자 권한 UI 제어
 // ────────────────────────────────────────────────────────
@@ -2350,15 +2624,26 @@ function applyRoleUI() {
   const dashMgmt = document.getElementById('dashMgmtCard');
   if (dashMgmt) dashMgmt.style.display = admin ? 'block' : 'none';
 
-  // 관리자 전용 배지 색상 업데이트
-  const adminBadgeEl = document.getElementById('adminRoleBadge');
-  if (adminBadgeEl) {
-    adminBadgeEl.style.display = admin ? 'inline-flex' : 'none';
-  }
+  // 관리자 탭 표시/숨김
+  document.querySelectorAll('.admin-only-tab').forEach(el => {
+    el.style.display = admin ? 'flex' : 'none';
+  });
 
-  // 회계 부서 경영지표 탭 재렌더 (isAdmin 변경 반영)
+  // 관리자 배지
+  const adminBadgeEl = document.getElementById('adminRoleBadge');
+  if (adminBadgeEl) adminBadgeEl.style.display = admin ? 'inline-flex' : 'none';
+
+  // 회계 경영지표 탭 재렌더
   if (window.renderDeptPage) {
     try { renderDeptPage('회계'); } catch(e) {}
+  }
+
+  // 관리자 데이터 관리 페이지 렌더
+  if (admin) {
+    renderAdminSummary();
+    renderAdminDailyTable();
+    updateLastBackupInfo();
+    checkAutoBackup();
   }
 }
 
