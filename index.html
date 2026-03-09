@@ -23,8 +23,54 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
 // ══════════════════════════════════════════
 //  관리자 설정 — 관리자 이메일 추가 가능
 // ══════════════════════════════════════════
+
+// 부서별 담당자 자동 지정
+const DEPT_OWNERS = {
+  '회계':     '정보라',
+  '무역1':    '카므란',
+  '무역2':    '이리',
+  '원료영업': '양대훈',
+  '생산기획': '송대주',
+  'MD':       '유영민',
+  '디자인':   '문민식',
+  'CS발주':   '조진영',
+  '연구원':   '최재훈',
+};
+
+
+function autoFillOwner(selectId, ownerInputId) {
+  const sel = document.getElementById(selectId);
+  const inp = document.getElementById(ownerInputId);
+  if (!sel || !inp) return;
+  const owner = getDeptOwner(sel.value);
+  if (owner) inp.value = owner;
+}
+function getDeptOwner(rawName) {
+  if (!rawName) return '';
+  const key = rawName.includes('(카므란)') ? '무역1'
+             : rawName.includes('(이리)')   ? '무역2'
+             : rawName;
+  return DEPT_OWNERS[key] || '';
+}
+// ══════════════════════════════════════════
+//  Firestore 보안 규칙 (Firebase 콘솔에서 설정)
+//  rules_version = '2';
+//  service cloud.firestore {
+//    match /databases/{database}/documents {
+//      match /shared/{doc} {
+//        allow read, write: if request.auth != null;
+//      }
+//      match /users/{uid}/{doc} {
+//        allow read, write: if request.auth.uid == uid;
+//      }
+//    }
+//  }
+// ══════════════════════════════════════════
+
+// ★ 관리자 구글 이메일을 아래에 추가하세요
 const ADMIN_EMAILS = [
-  'b2scompany2@gmail.com',   // ← 관리자 구글 계정 이메일
+  'b2scompany2@gmail.com',  // ← 실제 관리자 이메일로 교체
+  // 'admin2@gmail.com',    // ← 관리자 추가 시 여기에 추가
 ];
 
 function isAdmin() {
@@ -72,8 +118,8 @@ window._signOut = async () => {
 // 인증 상태 감지 → 사용자별 Firestore 동기화
 onAuthStateChanged(auth, async (user) => {
   window._currentUser = user;
-  // 회계 페이지 재렌더링 (관리자 탭 표시/숨김 업데이트)
-  if (window.renderDeptPage) setTimeout(() => renderDeptPage('회계'), 200);
+  // 권한 UI 적용
+  setTimeout(() => applyRoleUI(), 250);
   const bar   = document.getElementById('userBar');
   const loginBtn  = document.getElementById('loginGoogleBtn');
   const logoutBtn = document.getElementById('logoutBtn');
@@ -103,6 +149,7 @@ onAuthStateChanged(auth, async (user) => {
       Google로 로그인</button>`;
     if (logoutBtn) logoutBtn.style.display = 'none';
     document.getElementById('syncStatusText').textContent = '로그인하면 동기화됩니다';
+    setTimeout(() => applyRoleUI(), 100);
   }
 });
 
@@ -405,6 +452,70 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
   .mgmt-right{align-items:flex-start;flex-direction:row;gap:8px}
 }
 
+
+/* 주간 액션 KPI 참고 패널 */
+.wa-kpi-panel{background:#f0f7ff;border:1.5px solid #90caf9;border-radius:var(--r2);padding:12px;margin-bottom:4px}
+.wa-kpi-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px}
+.wa-kpi-ref{display:flex;flex-direction:column;gap:6px}
+.wa-kpi-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:#fff;border-radius:7px;border:1px solid #bbdefb;cursor:pointer;transition:all .15s}
+.wa-kpi-item:hover{border-color:var(--blue);background:#e3f2fd;transform:translateX(2px)}
+.wa-kpi-item.selected{border-color:var(--blue);background:#e3f2fd;box-shadow:0 0 0 2px rgba(25,118,210,.2)}
+.wa-kpi-item-left{flex:1;min-width:0}
+.wa-kpi-name{font-size:12px;font-weight:600;color:var(--txt1);margin-bottom:3px;line-height:1.4}
+.wa-kpi-vals{font-size:10px;color:var(--txt3)}
+.wa-kpi-item-right{flex-shrink:0;text-align:right}
+
+
+/* 주간 액션 다중 행 입력 */
+.wa-add-btn{background:#e3f2fd;color:var(--blue);border:1.5px solid #90caf9;border-radius:7px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+.wa-add-btn:hover{background:#bbdefb;border-color:var(--blue)}
+.action-row{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:#f8fafc;border-radius:8px;border:1px solid var(--bdr);margin-bottom:6px;transition:all .15s}
+.action-row:hover{border-color:#90caf9;background:#f0f7ff}
+.action-row-num{width:20px;height:20px;border-radius:50%;background:#1976d2;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:8px}
+.action-row-body{flex:1;display:flex;flex-direction:column;gap:0}
+.action-row-del{background:none;border:none;color:var(--txt3);font-size:14px;cursor:pointer;padding:4px 6px;border-radius:4px;flex-shrink:0;margin-top:4px;transition:all .15s}
+.action-row-del:hover{background:#ffebee;color:var(--red)}
+.exec-num{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#e3f2fd;color:var(--blue);font-size:9px;font-weight:700;margin-right:5px;flex-shrink:0}
+
+
+/* 일일 업무 탭 */
+.daily-wrap{padding:4px 0}
+.daily-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid #c8e6c9}
+.daily-section{margin-bottom:14px}
+.daily-section-title{font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:8px;letter-spacing:.3px}
+.daily-checklist{display:flex;flex-direction:column;gap:6px}
+.daily-check-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#f8fafc;border:1px solid var(--bdr);border-radius:8px;cursor:pointer;transition:all .15s}
+.daily-check-row:hover{border-color:#66bb6a;background:#f1f8f2}
+.daily-chk{width:22px;height:22px;border-radius:6px;border:2px solid var(--bdr2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.daily-chk.done{background:var(--green);border-color:var(--green)}
+.daily-check-label{font-size:12px;font-weight:600;color:var(--txt1);margin-bottom:2px;transition:all .2s}
+.daily-check-label.done{color:var(--txt3);text-decoration:line-through}
+.daily-check-kpi{font-size:10px;color:var(--txt3)}
+.daily-metrics{display:flex;flex-direction:column;gap:7px}
+.daily-metric-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:#f8fafc;border:1px solid var(--bdr);border-radius:8px}
+.daily-metric-left{flex:1;min-width:0}
+.daily-metric-label{font-size:12px;font-weight:600;color:var(--txt1);margin-bottom:2px}
+.daily-metric-kpi{font-size:10px;color:var(--txt3)}
+/* 미니 달력 */
+.daily-cal-wrap{background:#f0f7ff;border:1px solid #90caf9;border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.mini-cal{width:100%}
+.mini-cal-header{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px}
+.mini-cal-dow{text-align:center;font-size:9px;font-weight:700;color:var(--txt3);padding:2px 0}
+.mini-cal-body{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.mini-cal-cell{position:relative;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;border-radius:4px;color:var(--txt2)}
+.mini-cal-cell.logged{background:#c8e6c9;color:var(--green);font-weight:700}
+.mini-cal-cell.today{background:var(--blue);color:#fff;font-weight:700;border-radius:50%}
+.mini-cal-cell.future{color:var(--txt3);opacity:.4}
+.mini-cal-cell.empty{background:transparent}
+.cal-dot{width:4px;height:4px;border-radius:50%;background:var(--green);position:absolute;bottom:1px}
+
+
+/* 팀 일일 현황 */
+.team-daily-wrap{background:#f0f7ff;border:1.5px solid #90caf9;border-radius:9px;padding:10px 12px;margin-bottom:12px}
+.team-daily-item{padding:8px 10px;background:#fff;border-radius:7px;border:1px solid #e3f2fd;margin-bottom:6px}
+.team-daily-item:last-child{margin-bottom:0}
+.daily-metric-desc{font-size:9px;color:var(--txt3);margin-top:1px}
+
 </style>
 </head>
 <body>
@@ -431,6 +542,9 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
         style="display:flex;align-items:center;gap:6px;background:#fff;color:#333;border:1px solid #ddd;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
         <svg width="14" height="14" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
         Google 로그인</button>
+      <div id="adminRoleBadge" style="display:none;align-items:center;gap:4px;background:#fff8e1;color:#e65100;border:1px solid #ffe082;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:800">
+        👑 관리자
+      </div>
     </div>
     <button class="ibtn" id="installBtn">📲 앱 설치</button>
   </div>
@@ -574,7 +688,7 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
     <div class="frow">
       <div class="fg">
         <label class="fl">부서 선택</label>
-        <select class="fc" id="deptSelect">
+        <select class="fc" id="deptSelect" onchange="autoFillOwner('deptSelect','inputManager')">
           <option value="">부서를 선택하세요</option>
           <option>회계</option><option>무역1 (카므란)</option><option>무역2 (이리)</option>
           <option>원료영업</option>
@@ -602,17 +716,65 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
   <!-- Weekly Action Input -->
   <div class="card" style="margin-top:14px">
     <div class="sec-lbl">➕ 주간 액션 추가</div>
-    <div class="frow">
-      <div class="fg"><label class="fl">관련 KPI</label><input type="text" class="fc" id="aKpi" placeholder="e.g. 신규 거래처"></div>
-      <div class="fg"><label class="fl">담당자</label><input type="text" class="fc" id="aOwner" placeholder="이름"></div>
+
+    <!-- ① 부서 선택 + KPI 참고 패널 -->
+    <div class="wa-kpi-panel">
+      <div class="wa-kpi-hdr">
+        <div style="font-size:12px;font-weight:700;color:var(--txt1)">📌 부서 KPI 참고</div>
+        <select class="fc" id="waKpiDept" onchange="renderWaKpiRef(); autoFillOwner('waKpiDept','aOwner')" style="width:140px;padding:4px 8px;font-size:12px">
+          <option value="">부서 선택</option>
+          <option>회계</option>
+          <option>무역1 (카므란)</option>
+          <option>무역2 (이리)</option>
+          <option>원료영업</option>
+          <option>생산기획</option>
+          <option>MD</option>
+          <option>CS발주</option>
+          <option>디자인</option>
+          <option>연구원</option>
+        </select>
+      </div>
+      <div id="waKpiRef" class="wa-kpi-ref">
+        <div style="font-size:11px;color:var(--txt3);text-align:center;padding:10px">부서를 선택하면 KPI 항목이 표시됩니다</div>
+      </div>
     </div>
-    <div class="fg"><label class="fl">실행 내용</label><input type="text" class="fc" id="aTxt" placeholder="이번 주 실행한 내용"></div>
-    <div class="fg"><label class="fl">결과</label><input type="text" class="fc" id="aRes" placeholder="결과 기재"></div>
+
+    <!-- ② 액션 입력 폼 -->
+    <div class="frow" style="margin-top:12px">
+      <div class="fg">
+        <label class="fl">관련 KPI <span style="font-size:9px;color:var(--blue)">(위에서 클릭하면 자동입력)</span></label>
+        <input type="text" class="fc" id="aKpi" placeholder="KPI 항목을 선택하거나 직접 입력">
+      </div>
+      <div class="fg">
+        <label class="fl">담당자 <span style="font-size:9px;color:var(--green)">(부서 선택 시 자동입력)</span></label>
+        <input type="text" class="fc" id="aOwner" placeholder="부서 선택 시 자동입력">
+      </div>
+    </div>
+
+    <!-- 실행내용 + 결과 다중 입력 -->
+    <div style="margin-bottom:4px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label class="fl" style="margin:0">실행 내용 &amp; 결과</label>
+        <button class="wa-add-btn" onclick="addActionRow()" type="button">＋ 실행 추가</button>
+      </div>
+      <div id="actionRows">
+        <!-- 첫 번째 행 (기본) -->
+        <div class="action-row" id="arow_0">
+          <div class="action-row-num">1</div>
+          <div class="action-row-body">
+            <input type="text" class="fc action-txt" placeholder="실행 내용을 입력하세요" style="margin-bottom:5px">
+            <input type="text" class="fc action-res" placeholder="결과를 입력하세요" style="background:#f0fff4">
+          </div>
+          <button class="action-row-del" onclick="removeActionRow(0)" type="button" style="visibility:hidden">✕</button>
+        </div>
+      </div>
+    </div>
+
     <div class="frow">
       <div class="fg"><label class="fl">발생 문제</label><input type="text" class="fc" id="aIss" placeholder="없음 또는 기재"></div>
       <div class="fg"><label class="fl">다음 조치</label><input type="text" class="fc" id="aNxt" placeholder="다음 주 조치"></div>
     </div>
-    <button class="btn btn-p" onclick="addAction()" style="margin-top:6px">➕ 액션 추가</button>
+    <button class="btn btn-p" onclick="addAction()" style="margin-top:6px;width:100%">➕ 액션 저장</button>
   </div>
 </div>
 
@@ -725,7 +887,7 @@ const KPI_WEIGHTS = {
   '회계':      { '재고 정확도':30, '미수금 회수율':35, '결산 완료일 준수':20, '세금계산서 처리 정확도':15 },
   '무역1':     { '수입 통관 일정 준수율':25, '원료 서류 취합율':20, '신규 공급사 발굴 수':20, '운송비 절감율':20, '발주 오류율':10, '공급가 절감율':5 },
   '무역2':     { '수입 통관 일정 준수율':25, '원료 서류 취합율':20, '신규 공급사 발굴 수':20, '운송비 절감율':20, '발주 오류율':10, '공급가 절감율':5 },
-  '원료영업':  { '신규 거래처 수':30, '견적→수주 전환율':25, '월 거래처 방문 건수':15, '방문보고서 작성율':10, '방문→샘플 전환율':10, '샘플→발주 전환율':10 },
+  '원료영업':  { '신규 거래처 수':25, '견적→수주 전환율':20, '월 거래처 방문 건수':15, '방문보고서 작성율':10, '방문→샘플 전환율':10, '샘플→발주 전환율':10, '업체 문의 응답율':10 },
   '생산기획':  { '신제품 출시 리드타임':30, '재발주 리드타임':25, '원가 절감율':25, 'OEM 발주 증감율':15, '생산 품질 합격율':5 },
   'MD':        { '매출 성장률':40, '광고 ROAS':25, '행사 성사율':15, '상위 SKU 매출 비중':10, '적자 SKU 정리율':10 },
   'CS발주':    { '출고 오류율':25, 'CS 발생율':25, 'CS 처리시간':20, '반품율':20, '발주 처리 정확도':10 },
@@ -852,6 +1014,7 @@ const DEPTS = {
       {no:6,item:'샘플→발주 전환율',target:.40,actual:.33,prev:.30,trend:'▲3%p',comment:'샘플 6건 중 2건 발주 전환',isP:true,cat:'convert'},
       {no:7,item:'기존 거래처 매출 증가율',target:.10,actual:.08,prev:.07,trend:'▲1%p',comment:'A식품 리오더 15% 증가',isP:true,cat:'result'},
       {no:8,item:'후속조치 실행율',target:.90,actual:.80,prev:.75,trend:'▲5%p',comment:'15건 중 12건 7일 내 후속 연락 완료',isP:true,cat:'activity'},
+      {no:9,item:'업체 문의 응답율',target:.95,actual:.88,prev:.82,trend:'▲6%p',comment:'이번달 문의 25건 중 22건 당일 응답 완료',isP:true,cat:'activity'},
     ],
     monthly:[
       {no:1,kpi:'신규 거래처',task:'화장품 업체 타겟 리스트 20곳 작성',action:'업종별 잠재고객 DB 구축',due:'3/10',status:'완료'},
@@ -1072,6 +1235,7 @@ let STATE = loadState();
 if (!STATE.weeklyActions || !Array.isArray(STATE.weeklyActions) || !STATE.weeklyActions.length) STATE.weeklyActions = [...WEEKLY_ACTIONS];
 if (!STATE.kpiOverrides) STATE.kpiOverrides = {};
 if (!STATE.depts) STATE.depts = {};
+if (!STATE.dailyLogs) STATE.dailyLogs = {};
 
 // ────────────────────────────────────────────────────────
 //  FIREBASE SYNC
@@ -1082,22 +1246,34 @@ async function syncToFirebase(uid) {
   if (!window._syncEnabled || !window._db) return;
   const { doc: fDoc, setDoc } = window._firestore;
   const resolvedUid = uid || (window._currentUser && window._currentUser.uid);
-  const docPath = resolvedUid ? `users/${resolvedUid}/kpi_state` : `kpi_data/${SYNC_DOC}`;
+  const userName = window._currentUser?.displayName || window._currentUser?.email || 'unknown';
+
   try {
     setSyncStatus('syncing');
-    const payload = {
-      kpiOverrides: STATE.kpiOverrides || {},
+
+    // ① 공유 팀 데이터 (모든 로그인 사용자가 읽고 쓸 수 있음)
+    const sharedPayload = {
+      kpiOverrides:  STATE.kpiOverrides  || {},
       weeklyActions: STATE.weeklyActions || [],
-      depts: STATE.depts || {},
-      updatedAt: new Date().toISOString(),
-      uid: resolvedUid || null,
-      version: 'v4'
+      depts:         STATE.depts         || {},
+      dailyLogs:     STATE.dailyLogs     || {},
+      mgmtData:      STATE.mgmtData      || {},
+      updatedAt:     new Date().toISOString(),
+      updatedBy:     userName,
+      uid:           resolvedUid || null,
+      version:       'v5'
     };
-    await setDoc(fDoc(window._db, docPath), payload, { merge: true });
+    await setDoc(fDoc(window._db, 'shared/team_data'), sharedPayload, { merge: true });
+
+    // ② 개인 백업 (uid 있을 때만)
+    if (resolvedUid) {
+      await setDoc(fDoc(window._db, `users/${resolvedUid}/kpi_state`), sharedPayload, { merge: true });
+    }
+
     STATE.lastSync = new Date().toISOString();
     saveState();
     setSyncStatus('online');
-    showToast('☁️ Firebase 동기화 완료');
+    showToast('☁️ 팀 전체 동기화 완료');
   } catch(e) {
     console.error('Firebase sync error:', e);
     setSyncStatus('offline');
@@ -1114,9 +1290,8 @@ function setupRealtimeSync(uid) {
   if (!window._syncEnabled || !window._db) return;
   const { doc: fDoc, onSnapshot } = window._firestore;
   if (syncUnsubscribe) syncUnsubscribe();
-  // uid 있으면 사용자별, 없으면 공용 문서
-  const docPath = uid ? `users/${uid}/kpi_state` : `kpi_data/${SYNC_DOC}`;
-  const [col, ...rest] = docPath.split('/');
+  // 항상 공유 팀 문서 구독 (모든 사용자 데이터 실시간 반영)
+  const docPath = 'shared/team_data';
   syncUnsubscribe = onSnapshot(
     fDoc(window._db, docPath),
     (snap) => {
@@ -1126,9 +1301,11 @@ function setupRealtimeSync(uid) {
         const remoteTime = data.updatedAt ? new Date(data.updatedAt) : new Date(0);
         const localTime = STATE.lastSync ? new Date(STATE.lastSync) : new Date(0);
         if (remoteTime > localTime) {
-          if (data.kpiOverrides) STATE.kpiOverrides = data.kpiOverrides;
+          if (data.kpiOverrides)  STATE.kpiOverrides  = data.kpiOverrides;
           if (data.weeklyActions) STATE.weeklyActions = data.weeklyActions;
-          if (data.depts) STATE.depts = data.depts;
+          if (data.depts)         STATE.depts         = data.depts;
+          if (data.dailyLogs)     STATE.dailyLogs     = { ...STATE.dailyLogs, ...data.dailyLogs };
+          if (data.mgmtData)      STATE.mgmtData      = data.mgmtData;
           STATE.lastSync = data.updatedAt;
           saveState();
           renderAll();
@@ -1655,6 +1832,18 @@ function downloadMgmtCSV() {
 // ────────────────────────────────────────────────────────
 //  부서별 인라인 실적입력 HTML 생성
 // ────────────────────────────────────────────────────────
+function previewRateHTML(actual, k) {
+  const r = k.low ? (actual===0?1:Math.min(k.target/actual,1.5)) : actual/k.target;
+  const clr = r>=.9?'var(--green)':r>=.8?'var(--amber)':'var(--red)';
+  const pct = Math.min(r,1)*100;
+  return `<div style="display:flex;align-items:center;gap:5px">
+    <div style="width:50px;height:4px;background:#e8eef4;border-radius:2px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:${clr};border-radius:2px"></div>
+    </div>
+    <span style="font-size:10px;font-weight:700;color:${clr}">${(r*100).toFixed(0)}%</span>
+  </div>`;
+}
+
 function deptInputHTML(deptName, d) {
   const now = new Date();
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
@@ -1699,7 +1888,7 @@ function deptInputHTML(deptName, d) {
       </div>
       <div style="display:flex;gap:6px;align-items:center">
         <input type="month" class="fc" id="dimonth_${deptName}" value="${defaultMonth}" style="width:130px;padding:5px 8px">
-        <input type="text" class="fc" id="dimgr_${deptName}" placeholder="담당자명" style="width:90px;padding:5px 8px">
+        <input type="text" class="fc" id="dimgr_${deptName}" value="${DEPT_OWNERS[deptName]||''}" placeholder="담당자명" style="width:90px;padding:5px 8px">
       </div>
     </div>
     <div class="dept-inp-list">${kpiFields}</div>
@@ -1717,18 +1906,6 @@ function deptInputHTML(deptName, d) {
     <div class="dept-inp-saved" id="disaved_${deptName}" style="display:none">
       ✅ 저장 완료 — <span id="disaved_time_${deptName}"></span>
     </div>
-  </div>`;
-}
-
-function previewRateHTML(actual, k) {
-  const r = k.low ? (actual===0?1:Math.min(k.target/actual,1.5)) : actual/k.target;
-  const clr = r>=.9?'var(--green)':r>=.8?'var(--amber)':'var(--red)';
-  const pct = Math.min(r,1)*100;
-  return `<div style="display:flex;align-items:center;gap:5px">
-    <div style="width:50px;height:4px;background:#e8eef4;border-radius:2px;overflow:hidden">
-      <div style="height:100%;width:${pct}%;background:${clr};border-radius:2px"></div>
-    </div>
-    <span style="font-size:10px;font-weight:700;color:${clr}">${(r*100).toFixed(0)}%</span>
   </div>`;
 }
 
@@ -1785,6 +1962,404 @@ function resetDeptInput(deptName) {
   renderDeptPage(deptName);
   renderDashboard();
   showToast(`🔄 ${deptName} 실적이 초기화됐습니다`);
+}
+
+
+
+// ────────────────────────────────────────────────────────
+//  일일 업무 정의 (부서별)
+// ────────────────────────────────────────────────────────
+const DAILY_TASKS = {
+  '디자인': {
+    checklist: [
+      { id:'deadline', label:'오늘 마감 작업 기한 준수', kpi:'작업 기한 준수율' },
+      { id:'noError',  label:'패키지 오류 없이 완료',   kpi:'패키지 오류 건수' },
+      { id:'review',   label:'수정 요청 당일 처리',     kpi:'평균 수정 횟수' },
+    ],
+    metrics: [
+      { id:'completedWorks', label:'오늘 완료 작업 건수', unit:'건', kpi:'작업 기한 준수율', type:'count' },
+      { id:'totalWorks',     label:'오늘 전체 작업 건수', unit:'건', kpi:'작업 기한 준수율', type:'total' },
+      { id:'revisions',      label:'수정 발생 건수',      unit:'건', kpi:'평균 수정 횟수',   type:'accumulate' },
+      { id:'errors',         label:'패키지 오류 발생',    unit:'건', kpi:'패키지 오류 건수', type:'accumulate' },
+    ],
+    memo: true,
+  },
+  '원료영업': {
+    checklist: [
+      { id:'visit',    label:'오늘 거래처 방문 완료',      kpi:'월 거래처 방문 건수' },
+      { id:'report',   label:'방문 보고서 작성 완료',      kpi:'방문보고서 작성율' },
+      { id:'response', label:'업체 문의 당일 응답 완료',   kpi:'업체 문의 응답율' },
+      { id:'followup', label:'후속 조치 실행 완료',        kpi:'후속조치 실행율' },
+      { id:'saleslog', label:'일일 영업활동 기록 완료',    kpi:'월 거래처 방문 건수' },
+    ],
+    metrics: [
+      { id:'visits',      label:'오늘 방문 건수',           unit:'건', kpi:'월 거래처 방문 건수', type:'accumulate' },
+      { id:'salesActs',   label:'일일 영업활동 건수',        unit:'건', kpi:'월 거래처 방문 건수', type:'accumulate', desc:'전화/이메일/방문/미팅 등 모든 영업활동' },
+      { id:'inquiries',   label:'오늘 문의 수신',            unit:'건', kpi:'업체 문의 응답율',    type:'total' },
+      { id:'responded',   label:'당일 응답 완료',            unit:'건', kpi:'업체 문의 응답율',    type:'count' },
+      { id:'samples',     label:'샘플 요청 전환',            unit:'건', kpi:'방문→샘플 전환율',   type:'accumulate' },
+    ],
+    memo: true,
+  },
+};
+
+// 일일 업무 데이터 저장/로드
+function loadDailyData(dept, dateStr) {
+  const uid = window._currentUser?.uid || 'local';
+  const key = `daily_${dept}_${dateStr}_${uid}`;
+  try {
+    const raw = (STATE.dailyLogs || {})[key];
+    return raw || { checklist:{}, metrics:{}, memo:'' };
+  } catch(e) { return { checklist:{}, metrics:{}, memo:'' }; }
+}
+
+function saveDailyData(dept, dateStr, data) {
+  if (!STATE.dailyLogs) STATE.dailyLogs = {};
+  const uid    = window._currentUser?.uid || 'local';
+  const name   = window._currentUser?.displayName || DEPT_OWNERS[dept] || '담당자';
+  const email  = window._currentUser?.email || '';
+  // uid별 고유 키 → 같은 날 여러 사람이 저장 가능
+  const key = `daily_${dept}_${dateStr}_${uid}`;
+  STATE.dailyLogs[key] = {
+    ...data,
+    savedAt:     new Date().toISOString(),
+    authorUid:   uid,
+    authorName:  name,
+    authorEmail: email,
+    dept:        dept,
+    date:        dateStr,
+  };
+  saveState();
+  applyDailyToKpi(dept);
+  syncToFirebase();
+}
+
+// 일일 데이터 → KPI 자동 누적 반영
+function applyDailyToKpi(dept) {
+  if (!STATE.dailyLogs || !DAILY_TASKS[dept]) return;
+  const tasks  = DAILY_TASKS[dept];
+  const prefix = `daily_${dept}_`;
+  const logs   = Object.entries(STATE.dailyLogs)
+    .filter(([k]) => k.startsWith(prefix))  // dept + date + uid 모두 포함
+    .map(([,v]) => v);
+  if (!logs.length) return;
+
+  const d = DEPTS[dept];
+  if (!d) return;
+
+  tasks.metrics.forEach(m => {
+    const kpi = d.kpi.find(k => k.item === m.kpi);
+    if (!kpi) return;
+
+    if (m.type === 'accumulate') {
+      // 이번달 합산
+      const thisMonth = new Date().toISOString().slice(0,7);
+      const monthLogs = Object.entries(STATE.dailyLogs)
+        .filter(([k]) => k.startsWith(prefix) && k.slice(prefix.length, prefix.length+7) === thisMonth)
+        .map(([,v]) => v);
+      // 같은 날 여러 사람 → date별로 최신 값만 합산
+      const byDate = {};
+      monthLogs.forEach(log => { const d = log.date; if (!byDate[d] || log.savedAt > byDate[d].savedAt) byDate[d] = log; });
+      const total = Object.values(byDate).reduce((s, log) => s + (parseFloat(log.metrics?.[m.id]) || 0), 0);
+      if (!STATE.kpiOverrides) STATE.kpiOverrides = {};
+      STATE.kpiOverrides[`${dept}__${kpi.item}`] = total;
+    } else if (m.type === 'count' || m.type === 'total') {
+      // count/total 쌍으로 비율 계산
+      const countM = tasks.metrics.find(x => x.type==='count' && x.kpi===m.kpi);
+      const totalM = tasks.metrics.find(x => x.type==='total' && x.kpi===m.kpi);
+      if (countM && totalM) {
+        const thisMonth = new Date().toISOString().slice(0,7);
+        const monthLogs = Object.entries(STATE.dailyLogs)
+          .filter(([k]) => k.startsWith(prefix) && k.includes(thisMonth))
+          .map(([,v]) => v);
+        const totalCount = monthLogs.reduce((s,l) => s+(parseFloat(l.metrics?.[totalM.id])||0), 0);
+        const doneCount  = monthLogs.reduce((s,l) => s+(parseFloat(l.metrics?.[countM.id])||0), 0);
+        if (totalCount > 0) {
+          if (!STATE.kpiOverrides) STATE.kpiOverrides = {};
+          STATE.kpiOverrides[`${dept}__${kpi.item}`] = doneCount / totalCount;
+        }
+      }
+    }
+  });
+}
+
+
+// ────────────────────────────────────────────────────────
+//  일일 업무 탭 HTML 생성
+// ────────────────────────────────────────────────────────
+
+function teamDailyStatusHTML(deptName, dateStr) {
+  const prefix = `daily_${deptName}_${dateStr}`;
+  const logs = Object.entries(STATE.dailyLogs || {})
+    .filter(([k]) => k === prefix || k.startsWith(prefix + '_'))
+    .map(([k,v]) => v);
+
+  if (!logs.length) return `
+    <div style="font-size:11px;color:var(--txt3);padding:6px 0">
+      오늘 아직 작성된 기록이 없습니다
+    </div>`;
+
+  const tasks = DAILY_TASKS[deptName];
+  return logs.map(log => {
+    const author = log.authorName || log.authorEmail || '알 수 없음';
+    const time   = log.savedAt ? new Date(log.savedAt).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) : '';
+    const checkDone = tasks ? tasks.checklist.filter(t => log.checklist?.[t.id]).length : 0;
+    const checkTotal = tasks ? tasks.checklist.length : 0;
+    const metricSum  = tasks ? tasks.metrics.reduce((s,m) => s + (parseFloat(log.metrics?.[m.id])||0), 0) : 0;
+
+    return `<div class="team-daily-item">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <div style="width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">
+          ${author.charAt(0)}
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--txt1)">${author}</div>
+          <div style="font-size:9px;color:var(--txt3)">${time} 작성</div>
+        </div>
+        <div style="margin-left:auto;font-size:10px;color:var(--green);font-weight:700">
+          ✅ ${checkDone}/${checkTotal}
+        </div>
+      </div>
+      ${log.memo ? `<div style="font-size:10px;color:var(--txt2);background:var(--bg-2);padding:5px 8px;border-radius:6px;line-height:1.5">${log.memo}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+function dailyPageHTML(deptName) {
+  const tasks = DAILY_TASKS[deptName];
+  if (!tasks) return '<div style="padding:20px;text-align:center;color:var(--txt3)">일일 업무가 설정되지 않은 부서입니다</div>';
+
+  const today = new Date().toISOString().slice(0,10);
+  const saved = loadDailyData(deptName, today);
+  const owner = DEPT_OWNERS[deptName] || '';
+
+  // 이번달 일별 로그 달력 미리보기
+  const thisMonth = new Date().toISOString().slice(0,7);
+  const monthLogs = Object.keys(STATE.dailyLogs || {})
+    .filter(k => k.startsWith(`daily_${deptName}_`) && k.includes(thisMonth))
+    .map(k => k.replace(`daily_${deptName}_`,''));
+
+  const calHTML = buildMiniCal(thisMonth, monthLogs);
+
+  // 체크리스트
+  const checkHTML = tasks.checklist.map(t => {
+    const checked = saved.checklist[t.id] === true;
+    return `<div class="daily-check-row" onclick="toggleDailyCheck('${deptName}','${t.id}','${today}')" id="dchk_${deptName}_${t.id}">
+      <div class="daily-chk ${checked?'done':''}">
+        ${checked ? '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>' : ''}
+      </div>
+      <div class="daily-check-body">
+        <div class="daily-check-label ${checked?'done':''}">${t.label}</div>
+        <div class="daily-check-kpi">📊 ${t.kpi}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // 수치 입력
+  const metricHTML = tasks.metrics.map(m => {
+    const val = saved.metrics[m.id] || '';
+    const kpi = DEPTS[deptName]?.kpi.find(k=>k.item===m.kpi);
+    const r = kpi ? (() => {
+      const ov = STATE.kpiOverrides?.[`${deptName}__${kpi.item}`];
+      const actual = ov !== undefined ? ov : kpi.actual;
+      return kpi.low ? (actual===0?1:Math.min(kpi.target/actual,1.5)) : actual/kpi.target;
+    })() : 0;
+    const clr = r>=.9?'var(--green)':r>=.8?'var(--amber)':'var(--red)';
+    return `<div class="daily-metric-row">
+      <div class="daily-metric-left">
+        <div class="daily-metric-label">${m.label}</div>
+        <div class="daily-metric-kpi">📊 ${m.kpi} · 현재 <span style="color:${clr};font-weight:700">${(r*100).toFixed(0)}%</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="number" class="dir-inp daily-metric-inp" id="dm_${deptName}_${m.id}"
+          value="${val}" min="0" step="1" placeholder="0"
+          style="width:75px;text-align:right"
+          onchange="autoSaveDaily('${deptName}','${today}')">
+        <span class="dir-unit">${m.unit}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // 메모
+  const memoHTML = tasks.memo ? `
+    <div class="fg" style="margin-top:8px">
+      <label class="fl">오늘 특이사항 / 메모</label>
+      <textarea class="fc" id="dm_${deptName}_memo" rows="2"
+        style="resize:vertical;line-height:1.6"
+        placeholder="오늘 특이사항, 이슈, 다음날 인계사항 등"
+        onchange="autoSaveDaily('${deptName}','${today}')">${saved.memo||''}</textarea>
+    </div>` : '';
+
+  return `<div class="daily-wrap">
+
+    <!-- 헤더 -->
+    <div class="daily-hdr">
+      <div>
+        <div style="font-size:13px;font-weight:800;color:var(--txt1)">📅 일일 업무 기록</div>
+        <div style="font-size:11px;color:var(--txt3);margin-top:2px">
+          저장 시 팀 전체 공유 · KPI 자동 반영
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="date" class="fc" id="dailyDate_${deptName}" value="${today}"
+          onchange="changeDailyDate('${deptName}',this.value)"
+          style="padding:5px 8px;font-size:12px;width:130px">
+        <div style="font-size:11px;font-weight:700;color:var(--blue)">👤 ${owner}</div>
+      </div>
+    </div>
+
+    <!-- 팀 전체 작성 현황 -->
+    <div class="team-daily-wrap" id="teamDailyWrap_${deptName}">
+      ${teamDailyStatusHTML(deptName, today)}
+    </div>
+
+    <!-- 이번달 달력 -->
+    <div class="daily-cal-wrap">
+      <div style="font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:6px">📆 ${thisMonth} 기록 현황</div>
+      ${calHTML}
+    </div>
+
+    <!-- 체크리스트 -->
+    <div class="daily-section">
+      <div class="daily-section-title">✅ 오늘 체크리스트</div>
+      <div class="daily-checklist">${checkHTML}</div>
+    </div>
+
+    <!-- 수치 입력 -->
+    <div class="daily-section">
+      <div class="daily-section-title">📊 수치 입력 <span style="font-size:10px;font-weight:400;color:var(--txt3)">(저장 시 이번달 KPI에 자동 누적)</span></div>
+      <div class="daily-metrics">${metricHTML}</div>
+    </div>
+
+    ${memoHTML}
+
+    <!-- 저장 버튼 -->
+    <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+      <button class="btn btn-p" onclick="manualSaveDaily('${deptName}')" style="flex:1;padding:11px">
+        💾 저장 · KPI 반영
+      </button>
+      <button class="btn" onclick="viewDailyHistory('${deptName}')"
+        style="background:#f0f7ff;color:var(--blue);border:1px solid #90caf9;padding:11px 14px">
+        📋 이력
+      </button>
+    </div>
+    <div class="dept-inp-saved" id="daily_saved_${deptName}" style="display:none">
+      ✅ 저장 완료 · KPI 자동 반영됨
+    </div>
+
+  </div>`;
+}
+
+function buildMiniCal(ym, loggedDates) {
+  const [y, m] = ym.split('-').map(Number);
+  const firstDay = new Date(y, m-1, 1).getDay();
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const today = new Date().getDate();
+  const todayFull = new Date().toISOString().slice(0,10);
+
+  let html = '<div class="mini-cal"><div class="mini-cal-header">';
+  ['일','월','화','수','목','금','토'].forEach(d => {
+    html += `<div class="mini-cal-dow">${d}</div>`;
+  });
+  html += '</div><div class="mini-cal-body">';
+
+  // Empty cells
+  for (let i=0; i<firstDay; i++) html += '<div class="mini-cal-cell empty"></div>';
+
+  for (let d=1; d<=daysInMonth; d++) {
+    const dateStr = `${ym}-${String(d).padStart(2,'0')}`;
+    const hasLog = loggedDates.includes(dateStr);
+    const isToday = dateStr === todayFull;
+    const isFuture = new Date(dateStr) > new Date(todayFull);
+    html += `<div class="mini-cal-cell ${hasLog?'logged':''} ${isToday?'today':''} ${isFuture?'future':''}">${d}${hasLog?'<div class="cal-dot"></div>':''}</div>`;
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function toggleDailyCheck(dept, checkId, dateStr) {
+  const data = loadDailyData(dept, dateStr);
+  data.checklist[checkId] = !data.checklist[checkId];
+  saveDailyData(dept, dateStr, data);
+  renderDeptPage(dept);
+  showToast(data.checklist[checkId] ? '✅ 완료 체크!' : '↩ 체크 해제');
+}
+
+function autoSaveDaily(dept, dateStr) {
+  const tasks = DAILY_TASKS[dept];
+  if (!tasks) return;
+  const data = loadDailyData(dept, dateStr);
+  // 수치 수집
+  tasks.metrics.forEach(m => {
+    const el = document.getElementById(`dm_${dept}_${m.id}`);
+    if (el) data.metrics[m.id] = parseFloat(el.value) || 0;
+  });
+  const memoEl = document.getElementById(`dm_${dept}_memo`);
+  if (memoEl) data.memo = memoEl.value;
+  saveDailyData(dept, dateStr, data);
+}
+
+function manualSaveDaily(dept) {
+  const dateEl = document.getElementById(`dailyDate_${dept}`);
+  const dateStr = dateEl?.value || new Date().toISOString().slice(0,10);
+  autoSaveDaily(dept, dateStr);
+  renderDeptPage(dept);
+  renderDashboard();
+  const savedEl = document.getElementById(`daily_saved_${dept}`);
+  if (savedEl) { savedEl.style.display='block'; setTimeout(()=>savedEl.style.display='none', 3000); }
+  showToast('✅ 일일 업무 저장 · KPI 반영 완료');
+}
+
+function changeDailyDate(dept, dateStr) {
+  const tasks = DAILY_TASKS[dept];
+  if (!tasks) return;
+  const data = loadDailyData(dept, dateStr);
+  // 수치 복원
+  tasks.metrics.forEach(m => {
+    const el = document.getElementById(`dm_${dept}_${m.id}`);
+    if (el) el.value = data.metrics[m.id] || '';
+  });
+  const memoEl = document.getElementById(`dm_${dept}_memo`);
+  if (memoEl) memoEl.value = data.memo || '';
+  renderDeptPage(dept);
+}
+
+function viewDailyHistory(dept) {
+  const logs = Object.entries(STATE.dailyLogs || {})
+    .filter(([k]) => k.startsWith(`daily_${dept}_`))
+    .sort(([a],[b]) => b.localeCompare(a))
+    .slice(0,10);
+  if (!logs.length) { showToast('저장된 일일 기록이 없습니다'); return; }
+  showToast(`📋 ${dept} 최근 ${logs.length}일 기록 있음`);
+}
+
+// ────────────────────────────────────────────────────────
+//  관리자/사용자 권한 UI 제어
+// ────────────────────────────────────────────────────────
+function applyRoleUI() {
+  const admin = isAdmin();
+
+  // 전체 KPI 페이지 — 경영지표 섹션 표시/숨김
+  const mgmtSection = document.getElementById('companyMgmtSection');
+  if (mgmtSection) mgmtSection.style.display = admin ? 'block' : 'none';
+
+  // KPI Master 다운로드 버튼 — 관리자만 표시
+  const masterCsvBtn = document.getElementById('masterCsvBtn');
+  if (masterCsvBtn) masterCsvBtn.style.display = admin ? 'inline-flex' : 'none';
+
+  // 대시보드 경영지표 카드 — 관리자만 표시
+  const dashMgmt = document.getElementById('dashMgmtCard');
+  if (dashMgmt) dashMgmt.style.display = admin ? 'block' : 'none';
+
+  // 관리자 전용 배지 색상 업데이트
+  const adminBadgeEl = document.getElementById('adminRoleBadge');
+  if (adminBadgeEl) {
+    adminBadgeEl.style.display = admin ? 'inline-flex' : 'none';
+  }
+
+  // 회계 부서 경영지표 탭 재렌더 (isAdmin 변경 반영)
+  if (window.renderDeptPage) {
+    try { renderDeptPage('회계'); } catch(e) {}
+  }
 }
 
 // ────────────────────────────────────────────────────────
@@ -1852,6 +2427,32 @@ function renderCompany() {
   const mw = document.getElementById('monthlyTableWrap');
   if (cw) cw.innerHTML = kpiTableHTML(COMPANY_KPI, null);
   if (mw) mw.innerHTML = kpiTableHTML(MONTHLY_KPI, null);
+
+  // 관리자 전용 경영지표 그리드
+  const mgmtGrid = document.getElementById('companyMgmtGrid');
+  if (mgmtGrid && isAdmin()) {
+    const saved = STATE.mgmtData || {};
+    const latestQ = Object.keys(saved).sort().reverse()[0];
+    const data = latestQ ? saved[latestQ] : null;
+    if (data) {
+      mgmtGrid.innerHTML = MGMT_METRICS.map(m => {
+        const v = data[m.key];
+        if (v === undefined) return '';
+        let display = '';
+        if (m.type==='money') display = formatMoney(v);
+        else if (m.type==='pct') display = (v*100).toFixed(1)+'%';
+        else display = v + m.unit;
+        return `<div style="background:#fff;border:1px solid #ffe082;border-radius:8px;padding:10px 12px;text-align:center">
+          <div style="font-size:18px;margin-bottom:4px">${m.icon}</div>
+          <div style="font-size:10px;color:var(--txt3);margin-bottom:4px">${m.label}</div>
+          <div style="font-size:15px;font-weight:800;color:#e65100">${display}</div>
+          <div style="font-size:9px;color:var(--txt3);margin-top:2px">${latestQ}</div>
+        </div>`;
+      }).filter(Boolean).join('');
+    } else {
+      mgmtGrid.innerHTML = '<div style="font-size:11px;color:var(--txt3);grid-column:1/-1;text-align:center;padding:12px">회계 탭 → 경영지표에서 입력하세요</div>';
+    }
+  }
 }
 
 function renderKpiMaster() {
@@ -1960,6 +2561,7 @@ function renderDeptPage(deptName) {
           <div class="stab" onclick="switchStab('${safeId}','weekly',this)">✅ 주간점검</div>
           <div class="stab" onclick="switchStab('${safeId}','issues',this)">🔧 개선기록</div>
           <div class="stab" onclick="switchStab('${safeId}','input',this)" style="background:#e3f2fd;color:var(--blue);font-weight:700">✏️ 실적입력</div>
+          ${DAILY_TASKS[deptName] ? '<div class="stab" onclick="switchStab(\'' + safeId + '\',\'daily\',this)" style="background:#e8f5e9;color:var(--green);font-weight:700">📅 일일업무</div>' : ''}
           ${deptName==='회계' && isAdmin() ? '<div class="stab" onclick="switchStab(\'' + safeId + '\',\'mgmt\',this)" style="background:#fff8e1;color:#e65100;font-weight:700">📈 경영지표</div>' : ''}
         </div>
         <div class="stab-content active" id="${safeId}-kpi">${kpiTableHTML(d.kpi, deptName)}</div>
@@ -1967,11 +2569,74 @@ function renderDeptPage(deptName) {
         <div class="stab-content" id="${safeId}-weekly">${weeklyActHTML(weeklyData, deptName)}</div>
         <div class="stab-content" id="${safeId}-issues">${issueHTML(d.issues)}</div>
         <div class="stab-content" id="${safeId}-input">${deptInputHTML(deptName, d)}</div>
+        ${DAILY_TASKS[deptName] ? '<div class="stab-content" id="' + safeId + '-daily">' + dailyPageHTML(deptName) + '</div>' : ''}
         ${deptName==='회계' && isAdmin() ? '<div class="stab-content" id="' + safeId + '-mgmt">' + mgmtInputHTML() + '</div>' : (deptName==='회계' ? '<div class="stab-content" id="' + safeId + '-mgmt"><div style="text-align:center;padding:40px 20px"><div style="font-size:32px;margin-bottom:12px">🔒</div><div style="font-size:14px;font-weight:700;color:var(--txt2)">관리자 전용 메뉴</div><div style="font-size:12px;color:var(--txt3);margin-top:6px">관리자 계정으로 로그인하면 열람할 수 있습니다</div></div></div>' : '')}
       </div>
     </div>`;
 }
 
+
+// ────────────────────────────────────────────────────────
+//  주간 액션 KPI 참고 패널
+// ────────────────────────────────────────────────────────
+function renderWaKpiRef() {
+  const sel = document.getElementById('waKpiDept');
+  const ref = document.getElementById('waKpiRef');
+  if (!sel || !ref) return;
+
+  // 부서명 정규화 (카므란/이리 처리)
+  const rawName = sel.value;
+  const deptKey = rawName.includes('(카므란)') ? '무역1'
+                : rawName.includes('(이리)')   ? '무역2'
+                : rawName;
+
+  if (!deptKey) {
+    ref.innerHTML = '<div style="font-size:11px;color:var(--txt3);text-align:center;padding:10px">부서를 선택하면 KPI 항목이 표시됩니다</div>';
+    return;
+  }
+
+  const d = DEPTS[deptKey];
+  if (!d) return;
+
+  const weights = KPI_WEIGHTS[deptKey] || {};
+  const catMap  = { result:'결과', activity:'활동', convert:'전환' };
+
+  ref.innerHTML = d.kpi.map(k => {
+    const actual  = getActual({...k, _deptKey: deptKey});
+    const r       = k.low ? (actual===0?1:Math.min(k.target/actual,1.5)) : actual/k.target;
+    const clr     = r>=.9 ? 'var(--green)' : r>=.8 ? 'var(--amber)' : 'var(--red)';
+    const pct     = (Math.min(r,1)*100).toFixed(0);
+    const w       = weights[k.item];
+    const wTxt    = w ? `<span class="weight-badge">${w}%</span>` : '';
+    const catTxt  = k.cat ? `<span class="cat cat-${k.cat}" style="font-size:9px">${catMap[k.cat]||k.cat}</span>` : '';
+    const tgtDisp = k.isP ? (k.target*100).toFixed(0)+'%' : k.target+(k.unit||'');
+    const actDisp = k.isP ? (actual*100).toFixed(1)+'%'   : actual+(k.unit||'');
+
+    return `<div class="wa-kpi-item" onclick="selectWaKpi('${k.item.replace(/'/g,"\\'")}')">
+      <div class="wa-kpi-item-left">
+        <div class="wa-kpi-name">${catTxt} ${wTxt} ${k.item}</div>
+        <div class="wa-kpi-vals">목표 <strong>${tgtDisp}</strong> · 실적 <strong style="color:${clr}">${actDisp}</strong></div>
+      </div>
+      <div class="wa-kpi-item-right">
+        <div style="display:flex;align-items:center;gap:5px">
+          <div style="width:44px;height:5px;background:#e8eef4;border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${clr};border-radius:3px"></div>
+          </div>
+          <span style="font-size:11px;font-weight:700;color:${clr}">${pct}%</span>
+        </div>
+        <div style="font-size:9px;color:var(--txt3);margin-top:2px">탭하여 선택</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectWaKpi(kpiName, el) {
+  const inp = document.getElementById('aKpi');
+  if (inp) { inp.value = kpiName; inp.focus(); }
+  document.querySelectorAll('.wa-kpi-item').forEach(i => i.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+  showToast('📌 "' + kpiName + '" 선택됨');
+}
 function renderWeekly() {
   const actions = STATE.weeklyActions || [];
   const listEl = document.getElementById('actionList');
@@ -1980,8 +2645,12 @@ function renderWeekly() {
       <div class="achk">${a.done?'✓':''}</div>
       <div class="abody">
         <div class="akpi">🎯 ${a.kpi}</div>
-        <div class="atxt">${a.text}</div>
+        <div class="atxt"><span class="exec-num">1</span>${a.text}</div>
         <div class="ares">✅ ${a.result}</div>
+        ${(a.extra||[]).map((ex,ei)=>`
+          <div class="atxt" style="margin-top:4px"><span class="exec-num">${ei+2}</span>${ex.text}</div>
+          ${ex.result?`<div class="ares">✅ ${ex.result}</div>`:''}
+        `).join('')}
         ${a.issue&&a.issue!=='없음'?`<div class="aiss">⚠️ ${a.issue}</div>`:''}
         ${a.next?`<div class="anxt">→ ${a.next}</div>`:''}
         <div class="aown">👤 ${a.owner}</div>
@@ -2011,6 +2680,8 @@ function renderAll() {
     try { renderDeptPage(name); } catch(e) { console.error('renderDeptPage error for', name, e); }
   });
   try { renderWeekly(); } catch(e) { console.error('renderWeekly error:', e); }
+  // 권한 UI 적용
+  setTimeout(() => { if(window._currentUser !== undefined) applyRoleUI(); }, 100);
 }
 
 // ────────────────────────────────────────────────────────
@@ -2227,20 +2898,102 @@ function clearInput() {
   if (fieldsEl) fieldsEl.innerHTML = '';
 }
 
+
+// ────────────────────────────────────────────────────────
+//  주간 액션 — 실행내용+결과 다중 행 관리
+// ────────────────────────────────────────────────────────
+let _actionRowCount = 1;
+
+function addActionRow() {
+  const container = document.getElementById('actionRows');
+  if (!container) return;
+  const idx = Date.now();
+  const row = document.createElement('div');
+  row.className = 'action-row';
+  row.id = `arow_${idx}`;
+  const rowNum = container.querySelectorAll('.action-row').length + 1;
+  row.innerHTML = `
+    <div class="action-row-num">${rowNum}</div>
+    <div class="action-row-body">
+      <input type="text" class="fc action-txt" placeholder="실행 내용을 입력하세요" style="margin-bottom:5px">
+      <input type="text" class="fc action-res" placeholder="결과를 입력하세요" style="background:#f0fff4">
+    </div>
+    <button class="action-row-del" onclick="removeActionRow('${idx}')" type="button">✕</button>`;
+  container.appendChild(row);
+  row.querySelector('.action-txt').focus();
+  // Update first row del button visibility
+  updateActionRowDels();
+}
+
+function removeActionRow(idx) {
+  const row = document.getElementById("arow_"+idx);
+  if (row) row.remove();
+  // Renumber
+  const rows = document.querySelectorAll('.action-row');
+  rows.forEach((r, i) => {
+    const num = r.querySelector('.action-row-num');
+    if (num) num.textContent = i+1;
+  });
+  updateActionRowDels();
+}
+
+function updateActionRowDels() {
+  const rows = document.querySelectorAll('.action-row');
+  rows.forEach((r, i) => {
+    const del = r.querySelector('.action-row-del');
+    if (del) del.style.visibility = rows.length > 1 ? 'visible' : 'hidden';
+  });
+}
+
+function resetActionRows() {
+  _actionRowCount = 1;
+  const container = document.getElementById('actionRows');
+  if (!container) return;
+  container.innerHTML = `<div class="action-row" id="arow_0">
+    <div class="action-row-num">1</div>
+    <div class="action-row-body">
+      <input type="text" class="fc action-txt" placeholder="실행 내용을 입력하세요" style="margin-bottom:5px">
+      <input type="text" class="fc action-res" placeholder="결과를 입력하세요" style="background:#f0fff4">
+    </div>
+    <button class="action-row-del" onclick="removeActionRow(0)" type="button" style="visibility:hidden">✕</button>
+  </div>`;
+}
 function addAction() {
   const kpi = document.getElementById('aKpi')?.value.trim();
-  const text = document.getElementById('aTxt')?.value.trim();
-  if (!kpi || !text) { showToast('⚠️ KPI와 실행 내용을 입력하세요'); return; }
+  if (!kpi) { showToast('⚠️ 관련 KPI를 입력하세요'); return; }
+
+  // 다중 실행+결과 수집
+  const rows = document.querySelectorAll('.action-row');
+  const execItems = [];
+  rows.forEach(row => {
+    const txt = row.querySelector('.action-txt')?.value.trim();
+    const res = row.querySelector('.action-res')?.value.trim();
+    if (txt) execItems.push({ text: txt, result: res || '' });
+  });
+  if (!execItems.length) { showToast('⚠️ 실행 내용을 1개 이상 입력하세요'); return; }
+
+  // 첫 번째 항목을 대표값으로, 나머지는 extra에 저장
   STATE.weeklyActions.push({
-    kpi, text,
-    result: document.getElementById('aRes')?.value.trim() || '',
-    issue: document.getElementById('aIss')?.value.trim() || '없음',
-    next: document.getElementById('aNxt')?.value.trim() || '',
-    owner: document.getElementById('aOwner')?.value.trim() || '',
+    kpi,
+    text:    execItems[0].text,
+    result:  execItems[0].result,
+    extra:   execItems.slice(1),   // 추가 실행+결과
+    issue:   document.getElementById('aIss')?.value.trim() || '없음',
+    next:    document.getElementById('aNxt')?.value.trim() || '',
+    owner:   document.getElementById('aOwner')?.value.trim() || '',
     done: false
   });
+
   saveState();
-  ['aKpi','aTxt','aRes','aIss','aNxt','aOwner'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  // 폼 초기화
+  ['aKpi','aIss','aNxt','aOwner'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  resetActionRows();
+  // 부서 선택도 초기화
+  const deptSel = document.getElementById('waKpiDept');
+  if (deptSel) { deptSel.value=''; }
+  const ref = document.getElementById('waKpiRef');
+  if (ref) ref.innerHTML='<div style="font-size:11px;color:var(--txt3);text-align:center;padding:10px">부서를 선택하면 KPI 항목이 표시됩니다</div>';
+
   showToast('✅ 액션이 추가되었습니다');
   switchPage('weekly');
   syncToFirebase();
