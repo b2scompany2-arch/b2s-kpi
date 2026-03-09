@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -407,8 +406,8 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
   .mt-row > div:last-child{grid-column:1/-1;background:var(--bg-2);font-size:10px}
 }
 
-</style>
-<style>
+
+
 
 :root {
   --bg-0:#f0f4f8;--bg-1:#ffffff;--bg-2:#ffffff;--bg-3:#f8fafc;--bg-4:#e8eef4;
@@ -801,8 +800,6 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
   .mt-row{grid-template-columns:1fr 1fr}
   .mt-row > div:last-child{grid-column:1/-1;background:var(--bg-2);font-size:10px}
 }
-
-
 </style>
 </head>
 <body>
@@ -839,29 +836,29 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 
 <!-- TOP NAV -->
 <nav class="topnav" id="mainNav">
-  <div class="ntab active" data-page="dashboard"><div class="ndot" style="background:var(--blue)"></div>통합 대시보드</div>
-  <div class="ntab" data-page="company"><div class="ndot" style="background:var(--purple)"></div>전체 KPI</div>
-  <div class="ntab" data-page="kpimaster"><div class="ndot" style="background:var(--amber)"></div>📋 KPI Master</div>
+  <div class="ntab active" data-page="dashboard" onclick="switchPage('dashboard')"><div class="ndot" style="background:var(--blue)"></div>통합 대시보드</div>
+  <div class="ntab" data-page="company" onclick="switchPage('company')"><div class="ndot" style="background:var(--purple)"></div>전체 KPI</div>
+  <div class="ntab" data-page="kpimaster" onclick="switchPage('kpimaster')"><div class="ndot" style="background:var(--amber)"></div>📋 KPI Master</div>
 
-  <div class="ntab" data-page="dept-회계"><div class="ndot" style="background:#1976d2"></div>💰 회계</div>
+  <div class="ntab" data-page="dept-회계" onclick="switchPage('dept-회계')"><div class="ndot" style="background:#1976d2"></div>💰 회계</div>
 
-  <div class="ntab" data-page="dept-무역1"><div class="ndot" style="background:var(--cyan)"></div>🌐 무역1 (카므란)</div>
-  <div class="ntab" data-page="dept-무역2"><div class="ndot" style="background:var(--cyan)"></div>🌐 무역2 (이리)</div>
+  <div class="ntab" data-page="dept-무역1" onclick="switchPage('dept-무역1')"><div class="ndot" style="background:var(--cyan)"></div>🌐 무역1 (카므란)</div>
+  <div class="ntab" data-page="dept-무역2" onclick="switchPage('dept-무역2')"><div class="ndot" style="background:var(--cyan)"></div>🌐 무역2 (이리)</div>
 
-  <div class="ntab" data-page="dept-원료영업"><div class="ndot" style="background:var(--purple)"></div>🤝 원료영업</div>
+  <div class="ntab" data-page="dept-원료영업" onclick="switchPage('dept-원료영업')"><div class="ndot" style="background:var(--purple)"></div>🤝 원료영업</div>
 
-  <div class="ntab" data-page="dept-생산기획"><div class="ndot" style="background:var(--orange)"></div>🏗️ 생산기획</div>
-  <div class="ntab" data-page="dept-MD"><div class="ndot" style="background:var(--green)"></div>🛒 MD</div>
+  <div class="ntab" data-page="dept-생산기획" onclick="switchPage('dept-생산기획')"><div class="ndot" style="background:var(--orange)"></div>🏗️ 생산기획</div>
+  <div class="ntab" data-page="dept-MD" onclick="switchPage('dept-MD')"><div class="ndot" style="background:var(--green)"></div>🛒 MD</div>
 
-  <div class="ntab" data-page="dept-CS발주"><div class="ndot" style="background:var(--green)"></div>📋 CS발주</div>
-  <div class="ntab" data-page="dept-디자인"><div class="ndot" style="background:var(--purple)"></div>🎨 디자인</div>
+  <div class="ntab" data-page="dept-CS발주" onclick="switchPage('dept-CS발주')"><div class="ndot" style="background:var(--green)"></div>📋 CS발주</div>
+  <div class="ntab" data-page="dept-디자인" onclick="switchPage('dept-디자인')"><div class="ndot" style="background:var(--purple)"></div>🎨 디자인</div>
 
-  <div class="ntab" data-page="dept-연구원"><div class="ndot" style="background:var(--amber)"></div>🔬 연구원</div>
+  <div class="ntab" data-page="dept-연구원" onclick="switchPage('dept-연구원')"><div class="ndot" style="background:var(--amber)"></div>🔬 연구원</div>
 
-  <div class="ntab" data-page="weekly"><div class="ndot" style="background:var(--green)"></div>주간 점검</div>
-  <div class="ntab" data-page="input"><div class="ndot" style="background:var(--txt3)"></div>실적 입력</div>
+  <div class="ntab" data-page="weekly" onclick="switchPage('weekly')"><div class="ndot" style="background:var(--green)"></div>주간 점검</div>
+  <div class="ntab" data-page="input" onclick="switchPage('input')"><div class="ndot" style="background:var(--txt3)"></div>실적 입력</div>
   <div class="ntab admin-only-tab" data-page="admindata" style="display:none"><div class="ndot" style="background:#e65100"></div>🔐 데이터관리</div>
-  <div class="ntab" data-page="manual"><div class="ndot" style="background:#9c27b0"></div>📖 매뉴얼</div>
+  <div class="ntab" data-page="manual" onclick="switchPage('manual')"><div class="ndot" style="background:#9c27b0"></div>📖 매뉴얼</div>
 </nav>
 
 <!-- CONTENT -->
@@ -1325,11 +1322,11 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 <!-- BOTTOM NAV (Mobile) -->
 <nav class="bnav">
   <div class="bnav-i">
-    <div class="bni active" data-page="dashboard"><div class="bni-ico">📊</div><div class="bni-lbl">대시보드</div></div>
-    <div class="bni" data-page="kpimaster"><div class="bni-ico">📋</div><div class="bni-lbl">KPI Master</div></div>
-    <div class="bni" data-page="dept-원료영업"><div class="bni-ico">🤝</div><div class="bni-lbl">원료영업</div></div>
-    <div class="bni" data-page="weekly"><div class="bni-ico">✅</div><div class="bni-lbl">주간점검</div></div>
-    <div class="bni" data-page="input"><div class="bni-ico">✏️</div><div class="bni-lbl">입력</div></div>
+    <div class="bni active" data-page="dashboard" onclick="switchPage('dashboard')"><div class="bni-ico">📊</div><div class="bni-lbl">대시보드</div></div>
+    <div class="bni" data-page="kpimaster" onclick="switchPage('kpimaster')"><div class="bni-ico">📋</div><div class="bni-lbl">KPI Master</div></div>
+    <div class="bni" data-page="dept-원료영업" onclick="switchPage('dept-원료영업')"><div class="bni-ico">🤝</div><div class="bni-lbl">원료영업</div></div>
+    <div class="bni" data-page="weekly" onclick="switchPage('weekly')"><div class="bni-ico">✅</div><div class="bni-lbl">주간점검</div></div>
+    <div class="bni" data-page="input" onclick="switchPage('input')"><div class="bni-ico">✏️</div><div class="bni-lbl">입력</div></div>
   </div>
 </nav>
 </div>
@@ -1406,21 +1403,75 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 
 <div class="toast" id="toast"></div>
 <script type="module">
-
-
-
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
-// ══════════════════════════════════════════
-//  FIREBASE CONFIG
-// ══════════════════════════════════════════
-// ══════════════════════════════════════════
-//  관리자 설정 — 관리자 이메일 추가 가능
-// ══════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyB4RjMGO5zfNuwwk8SxnjYjwjqwpUIVOTA",
+  authDomain: "b2s-kpi-7c8c0.firebaseapp.com",
+  projectId: "b2s-kpi-7c8c0",
+  storageBucket: "b2s-kpi-7c8c0.firebasestorage.app",
+  messagingSenderId: "843804836870",
+  appId: "1:843804836870:web:49d50be534c21eb97baf87"
+};
 
-// 부서별 담당자 자동 지정
+const app      = initializeApp(firebaseConfig);
+const db       = getFirestore(app);
+const auth     = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+// 전역 노출
+window._db          = db;
+window._auth        = auth;
+window._syncEnabled = true;
+window._firestore   = { doc, setDoc, getDoc, onSnapshot, collection, getDocs };
+window._currentUser = null;
+
+window._googleSignIn = async () => {
+  try {
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
+  } catch(e) { console.error('Google 로그인 실패:', e); throw e; }
+};
+
+window._signOut = async () => { await signOut(auth); };
+
+onAuthStateChanged(auth, async (user) => {
+  window._currentUser = user;
+  setTimeout(() => { if(window.applyRoleUI) window.applyRoleUI(); }, 250);
+  const bar      = document.getElementById('userBar');
+  const loginBtn = document.getElementById('loginGoogleBtn');
+  const logoutBtn= document.getElementById('logoutBtn');
+  const syncText = document.getElementById('syncStatusText');
+
+  if (user) {
+    const isAdminUser = window.ADMIN_EMAILS && window.ADMIN_EMAILS.includes(user.email);
+    const adminBadge  = isAdminUser
+      ? '<span style="background:#fff8e1;color:#e65100;border:1px solid #ffe082;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:800;margin-left:2px">관리자</span>'
+      : '';
+    if (bar) {
+      bar.innerHTML = `<img src="${user.photoURL||''}" style="width:24px;height:24px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'">
+        <span style="font-size:11px;color:var(--txt2)">${user.displayName||user.email}</span>${adminBadge}
+        <button onclick="window._signOut()" style="background:rgba(239,83,80,.15);color:var(--red);border:1px solid var(--red);border-radius:6px;padding:2px 8px;font-size:10px;cursor:pointer;font-family:inherit">로그아웃</button>`;
+    }
+    if (loginBtn)  loginBtn.style.display  = 'none';
+    if (logoutBtn) logoutBtn.style.display = 'block';
+    if (syncText)  syncText.textContent    = `${user.displayName} · 동기화 중`;
+    if (window.setupUserSync) window.setupUserSync(user.uid);
+  } else {
+    if (bar) bar.innerHTML = `<button id="loginGoogleBtn" onclick="window._googleSignIn()"
+      style="display:flex;align-items:center;gap:6px;background:#fff;color:#333;border:1px solid #ddd;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+      <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Google로 로그인</button>`;
+    if (logoutBtn) logoutBtn.style.display = 'none';
+    if (syncText)  syncText.textContent    = '로그인하면 동기화됩니다';
+    setTimeout(() => { if(window.applyRoleUI) window.applyRoleUI(); }, 100);
+  }
+});
+</script>
+<script>
+
 const DEPT_OWNERS = {
   '회계':     '정보라',
   '무역1':    '카므란',
@@ -1434,15 +1485,6 @@ const DEPT_OWNERS = {
 };
 
 
-
-
-function autoFillOwner(selectId, ownerInputId) {
-  const sel = document.getElementById(selectId);
-  const inp = document.getElementById(ownerInputId);
-  if (!sel || !inp) return;
-  const owner = getDeptOwner(sel.value);
-  if (owner) inp.value = owner;
-}
 function getDeptOwner(rawName) {
   if (!rawName) return '';
   const key = rawName.includes('(카므란)') ? '무역1'
@@ -1450,112 +1492,27 @@ function getDeptOwner(rawName) {
              : rawName;
   return DEPT_OWNERS[key] || '';
 }
-// ══════════════════════════════════════════
-//  Firestore 보안 규칙 (Firebase 콘솔에서 설정)
-//  rules_version = '2';
-//  service cloud.firestore {
-//    match /databases/{database}/documents {
-//      match /shared/{doc} {
-//        allow read, write: if request.auth != null;
-//      }
-//      match /users/{uid}/{doc} {
-//        allow read, write: if request.auth.uid == uid;
-//      }
-//    }
-//  }
-// ══════════════════════════════════════════
+function autoFillOwner(selectId, ownerInputId) {
+  const sel = document.getElementById(selectId);
+  const inp = document.getElementById(ownerInputId);
+  if (!sel || !inp) return;
+  const owner = getDeptOwner(sel.value);
+  if (owner) inp.value = owner;
+}
 
-// ★ 관리자 구글 이메일을 아래에 추가하세요
-const ADMIN_EMAILS = [
-  'b2scompany2@gmail.com',  // ← 실제 관리자 이메일로 교체
-  // 'admin2@gmail.com',    // ← 관리자 추가 시 여기에 추가
+
+
+// ── 전역 노출 (module에서 이동) ──
+window.ADMIN_EMAILS = [
+  'b2scompany2@gmail.com',
 ];
 
 function isAdmin() {
   if (!window._currentUser) return false;
-  return ADMIN_EMAILS.includes(window._currentUser.email);
+  return (window.ADMIN_EMAILS || []).includes(window._currentUser.email);
 }
 
-const firebaseConfig = {
-  apiKey: "AIzaSyB4RjMGO5zfNuwwk8SxnjYjwjqwpUIVOTA",
-  authDomain: "b2s-kpi-7c8c0.firebaseapp.com",
-  projectId: "b2s-kpi-7c8c0",
-  storageBucket: "b2s-kpi-7c8c0.firebasestorage.app",
-  messagingSenderId: "843804836870",
-  appId: "1:843804836870:web:49d50be534c21eb97baf87"
-};
 
-const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
-
-// 전역 노출
-window._db        = db;
-window._auth      = auth;
-window._syncEnabled = true;
-window._firestore = { doc, setDoc, getDoc, onSnapshot, collection, getDocs };
-window._currentUser = null;
-
-// Google 로그인
-window._googleSignIn = async () => {
-  try {
-    const result = await signInWithPopup(auth, provider);
-    return result.user;
-  } catch(e) {
-    console.error('Google 로그인 실패:', e);
-    throw e;
-  }
-};
-
-// 로그아웃
-window._signOut = async () => {
-  await signOut(auth);
-};
-
-// 인증 상태 감지 → 사용자별 Firestore 동기화
-onAuthStateChanged(auth, async (user) => {
-  window._currentUser = user;
-  // 권한 UI 적용
-  setTimeout(() => applyRoleUI(), 250);
-  const bar   = document.getElementById('userBar');
-  const loginBtn  = document.getElementById('loginGoogleBtn');
-  const logoutBtn = document.getElementById('logoutBtn');
-
-  if (user) {
-    // 로그인됨 → UI 업데이트
-    const adminBadge = ADMIN_EMAILS.includes(user.email)
-      ? '<span style="background:#fff8e1;color:#e65100;border:1px solid #ffe082;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:800;margin-left:2px">관리자</span>'
-      : '';
-    if (bar) {
-      bar.innerHTML = `<img src="${user.photoURL||''}" style="width:24px;height:24px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'">
-        <span style="font-size:11px;color:var(--txt2)">${user.displayName||user.email}</span>${adminBadge}
-        <button onclick="window._signOut()" style="background:rgba(239,83,80,.15);color:var(--red);border:1px solid var(--red);border-radius:6px;padding:2px 8px;font-size:10px;cursor:pointer;font-family:inherit">로그아웃</button>`;
-    }
-    if (loginBtn)  loginBtn.style.display  = 'none';
-    if (logoutBtn) logoutBtn.style.display = 'block';
-
-    // 사용자별 Firestore 문서 경로: users/{uid}/kpi_state
-    document.getElementById('syncStatusText').textContent = `${user.displayName} · 동기화 중`;
-
-    if (window.setupUserSync) window.setupUserSync(user.uid);
-  } else {
-    // 로그아웃됨
-    if (bar) bar.innerHTML = `<button id="loginGoogleBtn" onclick="window._googleSignIn()" 
-      style="display:flex;align-items:center;gap:6px;background:#fff;color:#333;border:1px solid #ddd;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
-      <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-      Google로 로그인</button>`;
-    if (logoutBtn) logoutBtn.style.display = 'none';
-    document.getElementById('syncStatusText').textContent = '로그인하면 동기화됩니다';
-    setTimeout(() => applyRoleUI(), 100);
-  }
-});
-
-
-
-
-</script>
-<script>
 
 
 function switchInputTab(tab, el) {
@@ -2028,6 +1985,8 @@ function setupRealtimeSync(uid) {
     (err) => { console.error('Realtime sync error:', err); setSyncStatus('offline'); }
   );
 }
+window.setupUserSync = setupRealtimeSync;
+
 
 function setSyncStatus(status) {
   const dot = document.getElementById('syncDot');
@@ -3279,6 +3238,8 @@ function applyRoleUI() {
     checkAutoBackup();
   }
 }
+window.applyRoleUI = applyRoleUI;
+
 
 // ────────────────────────────────────────────────────────
 //  RENDER PAGES
@@ -4092,27 +4053,22 @@ function initPwaPrompt() {
 
 
 // ── SAFE INIT ──────────────────────────────────────
-(function waitForDOM() {
-  function doInit() {
-    // 탭 클릭 이벤트 등록 (DOM 준비 후)
-    document.querySelectorAll('[data-page]').forEach(el => {
-      el.addEventListener('click', () => switchPage(el.dataset.page));
-    });
-    try { renderAll(); } catch(e) { console.error('renderAll failed:', e); }
-    try { setupRealtimeSync(); } catch(e) {}
-    try { initPwaPrompt(); } catch(e) {}
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-      setTimeout(doInit, 100);
-    });
-  } else {
-    setTimeout(doInit, 100);
-  }
-  window.appInit = doInit;
-})();
+function doInit() {
+  try { renderAll(); } catch(e) { console.error('renderAll failed:', e); }
+  try { setupRealtimeSync(); } catch(e) { console.error('sync failed:', e); }
+  try { initPwaPrompt(); } catch(e) {}
+  // 초기 페이지 활성화
+  try { switchPage('dashboard'); } catch(e) {}
+}
+window.appInit = doInit;
 
-
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(doInit, 50);
+  });
+} else {
+  setTimeout(doInit, 50);
+}
 
 </script>
 </body>
