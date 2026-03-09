@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0a0e1a">
+<meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="B2S KPI">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -20,6 +20,18 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
 // ══════════════════════════════════════════
 //  FIREBASE CONFIG
 // ══════════════════════════════════════════
+// ══════════════════════════════════════════
+//  관리자 설정 — 관리자 이메일 추가 가능
+// ══════════════════════════════════════════
+const ADMIN_EMAILS = [
+  'b2scompany2@gmail.com',   // ← 관리자 구글 계정 이메일
+];
+
+function isAdmin() {
+  if (!window._currentUser) return false;
+  return ADMIN_EMAILS.includes(window._currentUser.email);
+}
+
 const firebaseConfig = {
   apiKey: "AIzaSyB4RjMGO5zfNuwwk8SxnjYjwjqwpUIVOTA",
   authDomain: "b2s-kpi-7c8c0.firebaseapp.com",
@@ -60,15 +72,20 @@ window._signOut = async () => {
 // 인증 상태 감지 → 사용자별 Firestore 동기화
 onAuthStateChanged(auth, async (user) => {
   window._currentUser = user;
+  // 회계 페이지 재렌더링 (관리자 탭 표시/숨김 업데이트)
+  if (window.renderDeptPage) setTimeout(() => renderDeptPage('회계'), 200);
   const bar   = document.getElementById('userBar');
   const loginBtn  = document.getElementById('loginGoogleBtn');
   const logoutBtn = document.getElementById('logoutBtn');
 
   if (user) {
     // 로그인됨 → UI 업데이트
+    const adminBadge = ADMIN_EMAILS.includes(user.email)
+      ? '<span style="background:#fff8e1;color:#e65100;border:1px solid #ffe082;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:800;margin-left:2px">관리자</span>'
+      : '';
     if (bar) {
       bar.innerHTML = `<img src="${user.photoURL||''}" style="width:24px;height:24px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'">
-        <span style="font-size:11px;color:var(--txt2)">${user.displayName||user.email}</span>
+        <span style="font-size:11px;color:var(--txt2)">${user.displayName||user.email}</span>${adminBadge}
         <button onclick="window._signOut()" style="background:rgba(239,83,80,.15);color:var(--red);border:1px solid var(--red);border-radius:6px;padding:2px 8px;font-size:10px;cursor:pointer;font-family:inherit">로그아웃</button>`;
     }
     if (loginBtn)  loginBtn.style.display  = 'none';
@@ -95,10 +112,10 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 <style>
 :root {
-  --bg-0:#060810;--bg-1:#0d1220;--bg-2:#131a2e;--bg-3:#1a2440;--bg-4:#222e50;
-  --blue:#4fc3f7;--green:#66bb6a;--amber:#ffa726;--red:#ef5350;--purple:#ce93d8;--cyan:#4dd0e1;--orange:#ff8a65;
-  --txt1:#e8edf5;--txt2:#8da0b8;--txt3:#4a5d78;
-  --bdr:#1e2d45;--bdr2:#263550;--r:12px;--r2:8px;
+  --bg-0:#f0f4f8;--bg-1:#ffffff;--bg-2:#ffffff;--bg-3:#f8fafc;--bg-4:#e8eef4;
+  --blue:#1976d2;--green:#2e7d32;--amber:#e65100;--red:#c62828;--purple:#6a1b9a;--cyan:#00838f;--orange:#bf360c;
+  --txt1:#1a2332;--txt2:#4a5568;--txt3:#8a9ab0;
+  --bdr:#e2e8f0;--bdr2:#cbd5e0;--r:12px;--r2:8px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg-0);color:var(--txt1);overflow:hidden}
@@ -107,7 +124,7 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 /* HEADER */
 .hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg-1);border-bottom:1px solid var(--bdr);flex-shrink:0;z-index:100}
 .logo{display:flex;align-items:center;gap:8px}
-.logo-mark{width:34px;height:34px;background:linear-gradient(135deg,#1e3a8a,#0ea5e9);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#fff}
+.logo-mark{width:34px;height:34px;background:linear-gradient(135deg,#1976d2,#42a5f5);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#fff}
 .logo-t{font-size:14px;font-weight:700;letter-spacing:-.3px}
 .logo-s{font-size:10px;color:var(--txt3)}
 .hdr-r{display:flex;gap:6px;align-items:center}
@@ -116,7 +133,7 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 .sync-dot.syncing{background:var(--amber);animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .mbadge{background:var(--bg-3);border:1px solid var(--bdr2);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--blue);font-family:'JetBrains Mono',monospace}
-.ibtn{display:none;align-items:center;gap:5px;background:linear-gradient(135deg,#1e3a8a,#0ea5e9);border:none;border-radius:7px;padding:5px 10px;font-size:11px;color:#fff;cursor:pointer;font-weight:700}
+.ibtn{display:none;align-items:center;gap:5px;background:linear-gradient(135deg,#1976d2,#42a5f5);border:none;border-radius:7px;padding:5px 10px;font-size:11px;color:#fff;cursor:pointer;font-weight:700}
 .ibtn.show{display:flex}
 
 /* TOP NAV */
@@ -135,7 +152,7 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 .page{display:none}.page.active{display:block}
 
 /* CARDS */
-.card{background:var(--bg-2);border:1px solid var(--bdr);border-radius:var(--r);padding:14px;margin-bottom:14px}
+.card{background:#ffffff;border:1px solid var(--bdr);border-radius:var(--r);padding:14px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 .card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .card-t{font-size:12px;font-weight:700;color:var(--txt2);letter-spacing:.5px;text-transform:uppercase}
 .sec-lbl{font-size:12px;font-weight:700;color:var(--txt2);letter-spacing:.5px;margin-bottom:10px}
@@ -144,27 +161,27 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 .alert-bar{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none}
 .alert-bar::-webkit-scrollbar{display:none}
 .al{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--r2);flex-shrink:0;border-left:3px solid transparent}
-.al.danger{background:rgba(239,83,80,.12);border-left-color:var(--red)}
-.al.warn{background:rgba(255,167,38,.12);border-left-color:var(--amber)}
-.al.ok{background:rgba(102,187,106,.12);border-left-color:var(--green)}
+.al.danger{background:#ffebee;border-left-color:var(--red)}
+.al.warn{background:#fff8e1;border-left-color:var(--amber)}
+.al.ok{background:#e8f5e9;border-left-color:var(--green)}
 .al-ico{font-size:14px}
 .al-t{font-size:11px;font-weight:700}
 .al-d{font-size:10px;color:var(--txt3);margin-top:2px}
 
 /* KPI CARDS GRID */
 .kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:14px}
-.kcard{background:var(--bg-3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:12px;position:relative;overflow:hidden}
+.kcard{background:#f8fafc;border:1px solid var(--bdr2);border-radius:var(--r2);padding:12px;position:relative;overflow:hidden}
 .kcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kc,var(--blue))}
 .klbl{font-size:10px;color:var(--txt3);margin-bottom:4px;font-weight:600}
 .kval{font-size:18px;font-weight:900;font-family:'JetBrains Mono',monospace;line-height:1}
 .ksub{font-size:10px;color:var(--txt3);margin-top:2px}
 .krate{font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;margin-top:6px;display:inline-block}
-.rg{background:rgba(102,187,106,.2);color:var(--green)}
-.rw{background:rgba(255,167,38,.2);color:var(--amber)}
-.rb{background:rgba(239,83,80,.2);color:var(--red)}
+.rg{background:#e8f5e9;color:var(--green)}
+.rw{background:#fff8e1;color:var(--amber)}
+.rb{background:#ffebee;color:var(--red)}
 
 /* SCORE CARD */
-.score-card{background:linear-gradient(135deg,var(--bg-3),var(--bg-4));border:1px solid var(--bdr2);border-radius:var(--r);padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:16px}
+.score-card{background:linear-gradient(135deg,#e3f2fd,#f3e5f5);border:1px solid var(--bdr2);border-radius:var(--r);padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:16px}
 .score-big{font-size:48px;font-weight:900;font-family:'JetBrains Mono',monospace;line-height:1}
 .score-info{flex:1}
 .score-lbl{font-size:11px;color:var(--txt3);margin-bottom:4px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
@@ -172,8 +189,8 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 
 /* GAUGE GRID */
 .ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px}
-.gitem{display:flex;flex-direction:column;align-items:center;padding:10px 6px;background:var(--bg-3);border:1px solid var(--bdr);border-radius:var(--r2);transition:all .2s}
-.gitem:hover{background:var(--bg-4);transform:translateY(-2px)}
+.gitem{display:flex;flex-direction:column;align-items:center;padding:10px 6px;background:#f8fafc;border:1px solid var(--bdr);border-radius:var(--r2);transition:all .2s}
+.gitem:hover{background:#edf2f7;transform:translateY(-2px)}
 .gcircle{position:relative;display:flex;align-items:center;justify-content:center}
 .gpct{position:absolute;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace}
 .gnm{font-size:10px;font-weight:600;margin-top:4px;text-align:center;color:var(--txt2)}
@@ -182,7 +199,7 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 .kt{width:100%;border-collapse:collapse;font-size:11px}
 .kt th{padding:6px 8px;text-align:left;color:var(--txt3);font-weight:600;border-bottom:1px solid var(--bdr);white-space:nowrap;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
 .kt td{padding:6px 8px;border-bottom:1px solid var(--bdr);vertical-align:middle}
-.kt tr:hover td{background:var(--bg-3)}
+.kt tr:hover td{background:#f0f7ff}
 .mono{font-family:'JetBrains Mono',monospace;font-size:11px}
 .pw{display:flex;align-items:center;gap:6px}
 .pb{flex:1;height:4px;background:var(--bg-4);border-radius:2px;min-width:40px}
@@ -193,26 +210,26 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 .trend.down{background:rgba(239,83,80,.2);color:var(--red)}
 .trend.same{background:var(--bg-4);color:var(--txt3)}
 .cat{font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;margin-right:3px;vertical-align:middle}
-.cat-result{background:rgba(79,195,247,.15);color:var(--blue)}
-.cat-activity{background:rgba(102,187,106,.15);color:var(--green)}
-.cat-convert{background:rgba(206,147,216,.15);color:var(--purple)}
-.weight-badge{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(255,167,38,.15);color:var(--amber);margin-left:3px}
+.cat-result{background:#e3f2fd;color:var(--blue)}
+.cat-activity{background:#e8f5e9;color:var(--green)}
+.cat-convert{background:#f3e5f5;color:var(--purple)}
+.weight-badge{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:#fff8e1;color:var(--amber);margin-left:3px}
 
 /* DEPT ACCORDION / CARD */
-.dacc{background:var(--bg-2);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:12px;overflow:hidden}
-.dacc-hdr{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg-3)}
+.dacc{background:#ffffff;border:1px solid var(--bdr);box-shadow:0 1px 4px rgba(0,0,0,.06);border-radius:var(--r);margin-bottom:12px;overflow:hidden}
+.dacc-hdr{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#f0f7ff;border-bottom:1px solid var(--bdr)}
 .dico{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 .dnm{font-size:14px;font-weight:700;flex:1}
 .dscr{font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace}
 .dacc-body{padding:14px}
 .stabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
-.stab{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;color:var(--txt3);background:var(--bg-4);border:none;transition:all .2s;white-space:nowrap}
-.stab.active{background:var(--blue);color:#000}
+.stab{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;color:var(--txt3);background:#edf2f7;border:none;transition:all .2s;white-space:nowrap}
+.stab.active{background:var(--blue);color:#fff}
 .stab-content{display:none}.stab-content.active{display:block}
 
 /* PLAN LIST */
 .plist{display:flex;flex-direction:column;gap:8px}
-.pitem{background:var(--bg-3);border-radius:var(--r2);padding:10px 12px;border-left:3px solid var(--bdr2)}
+.pitem{background:#f8fafc;border-radius:var(--r2);padding:10px 12px;border-left:3px solid var(--bdr2)}
 .pitem-hdr{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap}
 .pkpi{font-size:10px;font-weight:700;color:var(--blue)}
 .pst{font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px}
@@ -225,8 +242,8 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 
 /* ACTIONS */
 .alist{display:flex;flex-direction:column;gap:6px}
-.aitem{display:flex;gap:10px;padding:10px 12px;background:var(--bg-3);border-radius:var(--r2);cursor:pointer;border-left:3px solid var(--bdr2);transition:all .15s}
-.aitem:hover{background:var(--bg-4)}
+.aitem{display:flex;gap:10px;padding:10px 12px;background:#f8fafc;border-radius:var(--r2);cursor:pointer;border-left:3px solid var(--bdr2);transition:all .15s}
+.aitem:hover{background:#edf2f7}
 .aitem.done{opacity:.5;border-left-color:var(--green)}
 .achk{width:20px;height:20px;border-radius:50%;border:2px solid var(--bdr2);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;color:var(--green)}
 .aitem.done .achk{background:var(--green);border-color:var(--green);color:#000}
@@ -240,40 +257,40 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 
 /* ISSUES */
 .ilist{display:flex;flex-direction:column;gap:8px}
-.iitem{background:var(--bg-3);border-radius:var(--r2);padding:10px 12px;border-left:3px solid var(--amber)}
+.iitem{background:#f8fafc;border-radius:var(--r2);padding:10px 12px;border-left:3px solid var(--amber)}
 .idate{font-size:10px;color:var(--txt3);margin-bottom:4px;font-family:'JetBrains Mono',monospace}
 .iiss{font-size:12px;font-weight:700;color:var(--amber);margin-bottom:6px}
 .irow{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 @media(min-width:600px){.irow{grid-template-columns:1fr 1fr 1fr 1fr}}
-.icell{background:var(--bg-4);border-radius:6px;padding:6px 8px;font-size:10px;line-height:1.5;color:var(--txt2)}
+.icell{background:#edf2f7;border-radius:6px;padding:6px 8px;font-size:10px;line-height:1.5;color:var(--txt2)}
 .icell-lbl{font-weight:700;color:var(--txt3);margin-bottom:2px;font-size:9px;text-transform:uppercase;letter-spacing:.3px}
 
 /* KPI MASTER TABLE */
 .master-table{width:100%;border-collapse:collapse;font-size:11px}
-.master-table th{padding:7px 8px;text-align:left;color:var(--txt3);font-weight:600;border-bottom:2px solid var(--bdr2);white-space:nowrap;font-size:10px;background:var(--bg-3);position:sticky;top:0;z-index:2}
+.master-table th{padding:7px 8px;text-align:left;color:var(--txt2);font-weight:700;border-bottom:2px solid var(--bdr2);white-space:nowrap;font-size:10px;background:#f0f7ff;position:sticky;top:0;z-index:2}
 .master-table td{padding:7px 8px;border-bottom:1px solid var(--bdr);vertical-align:middle;line-height:1.4}
-.master-table tr:hover td{background:var(--bg-3)}
+.master-table tr:hover td{background:#f0f7ff}
 .master-wrap{overflow-x:auto;border-radius:var(--r2);border:1px solid var(--bdr)}
 
 /* TREND BADGES */
 .tbadge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px}
-.tbadge.up{background:rgba(102,187,106,.15);color:var(--green)}
-.tbadge.down{background:rgba(239,83,80,.15);color:var(--red)}
-.tbadge.flat{background:var(--bg-4);color:var(--txt3)}
+.tbadge.up{background:#e8f5e9;color:var(--green)}
+.tbadge.down{background:#ffebee;color:var(--red)}
+.tbadge.flat{background:#f1f5f9;color:var(--txt3)}
 
 /* PERIOD TABS */
 .period-tabs{display:flex;gap:4px;margin-bottom:12px}
-.ptab{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;color:var(--txt3);background:var(--bg-4);border:none}
-.ptab.active{background:var(--purple);color:#000}
+.ptab{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;color:var(--txt3);background:#edf2f7;border:none}
+.ptab.active{background:var(--purple);color:#fff}
 
 /* FORMS */
 .fg{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
 .fl{font-size:11px;font-weight:600;color:var(--txt2)}
-.fc{background:var(--bg-3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:8px 10px;color:var(--txt1);font-size:12px;font-family:inherit;outline:none;transition:border-color .2s;width:100%}
+.fc{background:#f8fafc;border:1px solid var(--bdr2);border-radius:var(--r2);padding:8px 10px;color:var(--txt1);font-size:12px;font-family:inherit;outline:none;transition:border-color .2s;width:100%}
 .fc:focus{border-color:var(--blue)}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .btn{padding:8px 14px;border-radius:var(--r2);border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
-.btn-p{background:linear-gradient(135deg,var(--blue),#0ea5e9);color:#000}
+.btn-p{background:linear-gradient(135deg,#1976d2,#42a5f5);color:#fff}
 .btn-g{background:rgba(102,187,106,.2);color:var(--green);border:1px solid var(--green)}
 .btn-r{background:rgba(239,83,80,.15);color:var(--red);border:1px solid var(--red)}
 .btn-csv{background:rgba(255,167,38,.15);color:var(--amber);border:1px solid var(--amber)}
@@ -286,12 +303,12 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 
 /* PERIOD BADGE */
 .period-badge{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700}
-.pb-monthly{background:rgba(79,195,247,.15);color:var(--blue)}
-.pb-quarterly{background:rgba(206,147,216,.15);color:var(--purple)}
-.pb-yearly{background:rgba(255,167,38,.15);color:var(--amber)}
+.pb-monthly{background:#e3f2fd;color:var(--blue)}
+.pb-quarterly{background:#f3e5f5;color:var(--purple)}
+.pb-yearly{background:#fff8e1;color:var(--amber)}
 
 /* BOTTOM NAV */
-.bnav{display:none;background:var(--bg-1);border-top:1px solid var(--bdr);padding-bottom:env(safe-area-inset-bottom,0)}
+.bnav{display:none;background:#ffffff;border-top:1px solid var(--bdr);box-shadow:0 -2px 10px rgba(0,0,0,.06);padding-bottom:env(safe-area-inset-bottom,0)}
 @media(max-width:768px){.bnav{display:block}.topnav{display:none}}
 .bnav-i{display:flex;justify-content:space-around}
 .bni{display:flex;flex-direction:column;align-items:center;padding:8px 6px;cursor:pointer;flex:1;min-width:0;transition:all .15s}
@@ -301,18 +318,18 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 .bni.active .bni-ico{filter:drop-shadow(0 0 4px var(--blue))}
 
 /* TOAST */
-.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg-4);border:1px solid var(--bdr2);border-radius:20px;padding:8px 18px;font-size:12px;font-weight:600;opacity:0;transition:all .3s;pointer-events:none;z-index:9999;white-space:nowrap}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a2332;color:#fff;border:1px solid #2d3748;border-radius:20px;padding:8px 18px;font-size:12px;font-weight:600;opacity:0;transition:all .3s;pointer-events:none;z-index:9999;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* SYNC STATUS BAR */
-.sync-bar{display:none;background:rgba(255,167,38,.1);border-bottom:1px solid rgba(255,167,38,.3);padding:4px 16px;font-size:10px;color:var(--amber);text-align:center}
+.sync-bar{display:none;background:#fff8e1;border-bottom:1px solid #ffe082;padding:4px 16px;font-size:10px;color:#e65100;text-align:center}
 .sync-bar.show{display:block}
-.sync-bar.synced{background:rgba(102,187,106,.1);border-bottom-color:rgba(102,187,106,.3);color:var(--green)}
+.sync-bar.synced{background:#e8f5e9;border-bottom-color:#a5d6a7;color:#2e7d32}
 
 /* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay{position:fixed;inset:0;background:rgba(30,40,80,.5);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px}
 .modal-overlay.show{display:flex}
-.modal{background:var(--bg-2);border:1px solid var(--bdr2);border-radius:var(--r);padding:20px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto}
+.modal{background:#ffffff;border:1px solid var(--bdr2);box-shadow:0 20px 60px rgba(0,0,0,.15);border-radius:var(--r);padding:20px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .modal-t{font-size:14px;font-weight:700}
 .modal-close{background:var(--bg-4);border:none;color:var(--txt2);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:14px}
@@ -325,25 +342,68 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 }
 
 /* PWA 설치 팝업 */
-.pwa-overlay{position:fixed;inset:0;background:rgba(6,8,16,.95);z-index:9998;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.pwa-overlay{position:fixed;inset:0;background:rgba(30,40,80,.6);z-index:9998;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
 .pwa-overlay.show{display:flex}
-.pwa-modal{background:var(--bg-2);border:1px solid var(--bdr2);border-radius:20px;padding:28px 24px;width:100%;max-width:360px;text-align:center;animation:pwaSlide .35s ease}
+.pwa-modal{background:#ffffff;border:1px solid var(--bdr2);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.15);padding:28px 24px;width:100%;max-width:360px;text-align:center;animation:pwaSlide .35s ease}
 @keyframes pwaSlide{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
 .pwa-logo{display:flex;justify-content:center;margin-bottom:16px}
-.pwa-logo-mark{width:64px;height:64px;background:linear-gradient(135deg,#1e3a8a,#0ea5e9);border-radius:16px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:#fff;box-shadow:0 8px 24px rgba(14,165,233,.3)}
+.pwa-logo-mark{width:64px;height:64px;background:linear-gradient(135deg,#1976d2,#42a5f5);border-radius:16px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:#fff;box-shadow:0 8px 24px rgba(14,165,233,.3)}
 .pwa-title{font-size:20px;font-weight:900;margin-bottom:6px}
 .pwa-sub{font-size:13px;color:var(--txt2);line-height:1.6;margin-bottom:20px}
 .pwa-features{display:flex;flex-direction:column;gap:8px;margin-bottom:24px;text-align:left}
 .pwa-feat{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-3);border-radius:8px;font-size:12px;color:var(--txt2)}
 .pwa-feat-ico{font-size:16px;width:24px;text-align:center}
-.pwa-btn-install{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#1e3a8a,#0ea5e9);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px;transition:all .2s}
+.pwa-btn-install{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#1976d2,#42a5f5);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px;transition:all .2s}
 .pwa-btn-install:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(14,165,233,.4)}
 .pwa-btn-skip{width:100%;padding:10px;border-radius:12px;border:1px solid var(--bdr2);background:transparent;color:var(--txt3);font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s}
 .pwa-btn-skip:hover{color:var(--txt2);border-color:var(--txt3)}
 .pwa-ios-guide{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;text-align:left}
 .pwa-ios-step{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg-3);border-radius:8px;font-size:12px;color:var(--txt2);line-height:1.5}
-.pwa-ios-num{width:22px;height:22px;border-radius:50%;background:var(--blue);color:#000;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pwa-ios-num{width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .pwa-installed-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(102,187,106,.15);color:var(--green);border:1px solid rgba(102,187,106,.3);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700}
+
+
+/* 부서별 인라인 실적입력 */
+.dept-input-wrap{padding:4px 0}
+.dept-inp-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap}
+.dept-inp-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.dept-inp-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#f8fafc;border-radius:var(--r2);border:1px solid var(--bdr);transition:all .15s}
+.dept-inp-row:hover{border-color:var(--blue);background:#f0f7ff}
+.dir-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.dir-no{width:22px;height:22px;border-radius:50%;background:#e3f2fd;color:var(--blue);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dir-info{flex:1;min-width:0}
+.dir-name{font-size:12px;font-weight:600;color:var(--txt1);margin-bottom:2px;line-height:1.4}
+.dir-target{font-size:10px;color:var(--txt3);line-height:1.4}
+.dir-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.dir-inp{background:#fff;border:1.5px solid var(--bdr2);border-radius:7px;padding:6px 8px;color:var(--txt1);font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .2s;text-align:right}
+.dir-inp:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(25,118,210,.1)}
+.dir-unit{font-size:11px;color:var(--txt3);font-weight:600;min-width:16px}
+.dir-rate{min-width:80px}
+.dept-inp-footer{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--bdr)}
+.dept-inp-saved{margin-top:10px;padding:8px 12px;background:#e8f5e9;border-radius:8px;font-size:12px;font-weight:600;color:var(--green);border:1px solid #a5d6a7}
+@media(max-width:480px){
+  .dept-inp-row{flex-direction:column;align-items:flex-start}
+  .dir-right{align-items:flex-start;flex-direction:row;gap:8px}
+}
+
+
+/* 경영지표 입력 (회계 전용) */
+.mgmt-wrap{padding:4px 0}
+.mgmt-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap;padding-bottom:12px;border-bottom:2px solid #fff8e1}
+.mgmt-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.mgmt-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:#fffdf5;border-radius:var(--r2);border:1px solid #ffe082;transition:all .15s}
+.mgmt-row:hover{border-color:#e65100;background:#fff8e1}
+.mgmt-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.mgmt-ico{width:32px;height:32px;border-radius:8px;background:#fff8e1;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border:1px solid #ffe082}
+.mgmt-label{font-size:12px;font-weight:700;color:var(--txt1);margin-bottom:2px}
+.mgmt-desc{font-size:10px;color:var(--txt3)}
+.mgmt-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.mgmt-prev{min-height:16px;text-align:right}
+.mgmt-footer{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:12px;border-top:1px solid #ffe082}
+@media(max-width:480px){
+  .mgmt-row{flex-direction:column;align-items:flex-start}
+  .mgmt-right{align-items:flex-start;flex-direction:row;gap:8px}
+}
 
 </style>
 </head>
@@ -382,8 +442,8 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
   <div class="ntab" data-page="company"><div class="ndot" style="background:var(--purple)"></div>전체 KPI</div>
   <div class="ntab" data-page="kpimaster"><div class="ndot" style="background:var(--amber)"></div>📋 KPI Master</div>
 
-  <div class="ntab-sep">경영지원</div>
-  <div class="ntab" data-page="dept-경영지원"><div class="ndot" style="background:var(--txt2)"></div>⚙️ 경영지원</div>
+  <div class="ntab-sep">회계</div>
+  <div class="ntab" data-page="dept-회계"><div class="ndot" style="background:#1976d2"></div>💰 회계</div>
 
   <div class="ntab-sep">무역</div>
   <div class="ntab" data-page="dept-무역1"><div class="ndot" style="background:var(--cyan)"></div>🌐 무역1 (카므란)</div>
@@ -482,7 +542,7 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 </div>
 
 <!-- ══ 부서별 개별 페이지 ══ -->
-<div class="page" id="page-dept-경영지원"><div id="deptContent-경영지원"></div></div>
+<div class="page" id="page-dept-회계"><div id="deptContent-회계"></div></div>
 <div class="page" id="page-dept-무역1"><div id="deptContent-무역1"></div></div>
 <div class="page" id="page-dept-무역2"><div id="deptContent-무역2"></div></div>
 <div class="page" id="page-dept-원료영업"><div id="deptContent-원료영업"></div></div>
@@ -523,7 +583,7 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
         <label class="fl">부서 선택</label>
         <select class="fc" id="deptSelect">
           <option value="">부서를 선택하세요</option>
-          <option>경영지원</option><option>무역1 (카므란)</option><option>무역2 (이리)</option>
+          <option>회계</option><option>무역1 (카므란)</option><option>무역2 (이리)</option>
           <option>원료영업</option>
           <option>생산기획</option><option>MD</option>
           <option>CS발주</option><option>디자인</option>
@@ -669,7 +729,7 @@ let currentPeriod = 'monthly';
 // ────────────────────────────────────────────────────────
 // KPI 가중치 정의 (합계 = 100%)
 const KPI_WEIGHTS = {
-  '경영지원':  { '주문서 취합 및 발주율':25, '입출고 오류율':25, '재고 관리 정확도':20, '배차 견적 확인율':15, '출고서류 발송율':15 },
+  '회계':      { '재고 정확도':30, '미수금 회수율':35, '결산 완료일 준수':20, '세금계산서 처리 정확도':15 },
   '무역1':     { '수입 통관 일정 준수율':25, '원료 서류 취합율':20, '신규 공급사 발굴 수':20, '운송비 절감율':20, '발주 오류율':10, '공급가 절감율':5 },
   '무역2':     { '수입 통관 일정 준수율':25, '원료 서류 취합율':20, '신규 공급사 발굴 수':20, '운송비 절감율':20, '발주 오류율':10, '공급가 절감율':5 },
   '원료영업':  { '신규 거래처 수':30, '견적→수주 전환율':25, '월 거래처 방문 건수':15, '방문보고서 작성율':10, '방문→샘플 전환율':10, '샘플→발주 전환율':10 },
@@ -682,7 +742,7 @@ const KPI_WEIGHTS = {
 
 // KPI Owner 정의
 const KPI_OWNERS = {
-  '경영지원':'경영지원팀', '무역1':'카므란', '무역2':'이리',
+  '회계':'회계팀', '무역1':'카므란', '무역2':'이리',
   '원료영업':'원료영업팀', '생산기획':'생산기획팀', 'MD':'MD팀',
   'CS발주':'CS발주팀', '디자인':'디자인팀', '연구원':'연구원팀',
 };
@@ -701,38 +761,34 @@ const KPI_PERIODS = {
 const DEPTS = {
 
   /* ─────────────────────────────
-     경영지원
+     회계
   ───────────────────────────── */
-  '경영지원': {
-    icon:'⚙️', color:'#78909c', group:'경영지원',
+  '회계': {
+    icon:'💰', color:'#1976d2', group:'회계',
     kpi:[
-      {no:1,item:'주문서 취합 및 발주율',target:.98,actual:.95,prev:.94,trend:'▲1%p',comment:'주문서 52건 중 49건 당일 발주 완료',isP:true,cat:'activity'},
-      {no:2,item:'입출고 오류율',target:.02,actual:.03,prev:.035,trend:'▲0.5%p',comment:'입출고 180건 중 오류 5건 발생',isP:true,low:true,cat:'result'},
-      {no:3,item:'재고 관리 정확도',target:.98,actual:.965,prev:.960,trend:'▲0.5%p',comment:'실재고 vs 장부 오차 3.5%',isP:true,cat:'result'},
-      {no:4,item:'배차 견적 확인율',target:.95,actual:.90,prev:.88,trend:'▼2%p',comment:'배차 30건 중 27건 견적 확인 완료',isP:true,cat:'activity'},
-      {no:5,item:'출고서류 발송율',target:1,actual:.93,prev:.90,trend:'▲3%p',comment:'출고 45건 중 42건 서류 완비 발송',isP:true,cat:'activity'},
+      {no:1,item:'재고 정확도',target:.98,actual:.95,prev:.93,trend:'▲2%p',comment:'실재고 vs 장부 오차율 5% → 3%로 개선',isP:true,cat:'result'},
+      {no:2,item:'미수금 회수율',target:.95,actual:.88,prev:.85,trend:'▲3%p',comment:'미수금 잔액 1,200만원 중 1,056만원 회수',isP:true,cat:'result'},
+      {no:3,item:'결산 완료일 준수',target:1,actual:1,prev:1,trend:'—',comment:'월 결산 마감일 내 완료',isP:true,cat:'activity'},
+      {no:4,item:'세금계산서 처리 정확도',target:.99,actual:.97,prev:.96,trend:'▲1%p',comment:'세금계산서 발행 150건 중 오류 4건',isP:true,cat:'result'},
     ],
     monthly:[
-      {no:1,kpi:'주문서 취합/발주',task:'주문서 당일처리 체계 구축',action:'오전 11시 마감, 오후 2시 일괄 발주',due:'3/5',status:'완료'},
-      {no:2,kpi:'입출고 오류율',task:'출고 전 2인 더블체크 프로세스 시행',action:'출고 담당+확인 담당 수량 교차 확인',due:'3/5',status:'완료',note:'오류 0건 달성'},
-      {no:3,kpi:'재고 관리',task:'월 1회 순환 실사 스케줄 수립',action:'구역별 실사 일정표 작성 (A~D구역)',due:'3/8',status:'완료'},
-      {no:4,kpi:'배차 견적 확인',task:'배차 협력사 추가 견적 비교',action:'기존 3사 + 신규 2사 단가 비교표',due:'3/15',status:'진행중',note:'1곳 계약 완료'},
-      {no:5,kpi:'출고서류 발송',task:'서류 매칭 체크리스트 표준화',action:'원료별 필수서류 리스트+매칭 확인란',due:'3/8',status:'완료',note:'누락 건 50% 감소'},
+      {no:1,kpi:'재고 정확도',task:'월 1회 순환 실사 시행',action:'구역별 실사 일정 수립 및 장부 대조',due:'3/31',status:'진행중',note:'A·B구역 완료'},
+      {no:2,kpi:'미수금 회수율',task:'미수금 거래처 독촉 연락 체계화',action:'30일 이상 미수 거래처 주 1회 연락',due:'3/25',status:'진행중',note:'3곳 회수 확인'},
+      {no:3,kpi:'결산 완료일 준수',task:'월 결산 체크리스트 표준화',action:'계정별 마감 순서 및 담당자 지정',due:'3/31',status:'예정'},
+      {no:4,kpi:'세금계산서 처리 정확도',task:'세금계산서 발행 전 2중 검증 도입',action:'발행 전 품목·금액·사업자번호 교차 확인',due:'3/10',status:'완료',note:'오류율 50% 감소'},
     ],
     weekly:[
-      {kpi:'주문서 취합/발주',text:'주문서 52건 접수→48건 당일 발주',result:'48건 완료, 4건 익일 처리',issue:'금요일 오후 접수 건 당일 처리 어려움',next:'금요일 오전 마감 원칙 공지',owner:'담당자',done:false},
-      {kpi:'재고 관리',text:'A구역 순환 실사 진행',result:'장부 대비 98% 일치, B원료 10kg 차이',issue:'B원료 입고 시 검수 수량 미기재',next:'입고 검수 수량 기재 의무화',owner:'담당자',done:false},
-      {kpi:'출고서류 발송',text:'출고 28건 서류 매칭 및 발송',result:'26건 완비 발송, 2건 서류 누락',issue:'수입신고필증 수령 지연',next:'통관 완료 즉시 서류 스캔 체계 구축',owner:'담당자',done:false},
+      {kpi:'미수금 회수율',text:'미수금 거래처 5곳 독촉 연락',result:'2곳 입금 확인, 3곳 다음주 예정',issue:'1곳 연락 두절',next:'내용증명 발송 검토',owner:'회계담당',done:false},
+      {kpi:'재고 정확도',text:'C구역 재고 실사 진행',result:'장부 대비 97% 일치',issue:'원료 2종 수량 불일치',next:'입고 기록 재검토',owner:'회계담당',done:false},
+      {kpi:'세금계산서 처리 정확도',text:'이번주 세금계산서 38건 처리',result:'38건 오류 없이 발행 완료',issue:'없음',next:'다음주 마감 건 사전 준비',owner:'회계담당',done:true},
     ],
     issues:[
-      {date:'3/7',issue:'출고 수량 오류로 거래처 클레임',cause:'1인 확인으로 수량 누락',action:'출고 전 2인 더블체크 의무화',result:'이후 출고 오류 0건',prevent:'더블체크 체크리스트 비치'},
-      {date:'3/14',issue:'출고서류 누락으로 거래처 입고 지연',cause:'서류 완비 전 출고 진행',action:'서류 완비 확인 후 출고 원칙 수립',result:'누락 건 50% 감소',prevent:'서류 매칭 체크리스트 의무 사용'},
+      {date:'3/5',issue:'세금계산서 사업자번호 오기재 2건',cause:'수기 입력 시 번호 확인 누락',action:'발행 전 사업자번호 2중 확인 의무화',result:'이후 오기재 0건',prevent:'거래처 마스터 DB 관리 시스템 도입'},
+      {date:'3/18',issue:'미수금 30일 초과 거래처 미파악',cause:'미수금 현황 주간 모니터링 부재',action:'주간 미수금 현황 보고서 작성 시작',result:'초과 거래처 5곳 파악 완료',prevent:'미수금 자동 알림 기준 수립'},
     ],
   },
 
-  /* ─────────────────────────────
-     무역 (1·2 동일 KPI 구조)
-  ───────────────────────────── */
+
   '무역1': {
     icon:'🌐', color:'#26c6da', group:'무역', subtitle:'카므란',
     kpi:[
@@ -1340,6 +1396,404 @@ function renderKpiSalesChain() {
   }).join('');
 }
 
+
+
+// ────────────────────────────────────────────────────────
+//  경영지표 분기별 입력 (회계 전용)
+// ────────────────────────────────────────────────────────
+const MGMT_METRICS = [
+  { key:'revenue',      label:'총매출',        unit:'원',  type:'money', icon:'💵', desc:'해당 분기 전체 매출액' },
+  { key:'grossMargin',  label:'매출총이익률',   unit:'%',   type:'pct',  icon:'📊', desc:'(매출 - 매출원가) / 매출 × 100' },
+  { key:'laborCost',    label:'인건비율',       unit:'%',   type:'pct',  icon:'👥', desc:'인건비 / 매출 × 100' },
+  { key:'inventory',    label:'재고회전율',     unit:'회',  type:'num',  icon:'🔄', desc:'매출원가 / 평균재고자산' },
+  { key:'operatingProfit', label:'영업이익률',  unit:'%',   type:'pct',  icon:'📈', desc:'영업이익 / 매출 × 100' },
+  { key:'accountsReceivable', label:'미수금 잔액', unit:'원', type:'money', icon:'📋', desc:'기말 미수금 잔액 합계' },
+];
+
+function mgmtInputHTML() {
+  const now = new Date();
+  const quarter = Math.ceil((now.getMonth()+1)/3);
+  const year = now.getFullYear();
+  const defaultQ = `${year}-Q${quarter}`;
+
+  // Load saved data
+  const saved = STATE.mgmtData || {};
+  const quarters = Object.keys(saved).sort().reverse();
+
+  const fields = MGMT_METRICS.map(m => {
+    const val = saved[defaultQ] ? saved[defaultQ][m.key] || '' : '';
+    let displayVal = val;
+    if (m.type === 'money' && val) displayVal = (val/10000).toFixed(0); // 원 → 만원 표시
+    if (m.type === 'pct' && val) displayVal = (val*100).toFixed(1);
+
+    return `<div class="mgmt-row" id="mgmtrow_${m.key}">
+      <div class="mgmt-left">
+        <div class="mgmt-ico">${m.icon}</div>
+        <div>
+          <div class="mgmt-label">${m.label}</div>
+          <div class="mgmt-desc">${m.desc}</div>
+        </div>
+      </div>
+      <div class="mgmt-right">
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" class="dir-inp" id="mginp_${m.key}"
+            value="${displayVal}" step="any" placeholder="입력"
+            style="width:110px;text-align:right"
+            oninput="previewMgmt('${m.key}','${m.type}',this.value)">
+          <span class="dir-unit" style="min-width:28px">${m.type==='money'?'만원':m.unit}</span>
+        </div>
+        <div class="mgmt-prev" id="mgprev_${m.key}">${val ? renderMgmtPrev(m, val) : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // History table
+  const histRows = quarters.slice(0,8).map(q => {
+    const qd = saved[q];
+    if (!qd) return '';
+    const rev = qd.revenue ? formatMoney(qd.revenue) : '-';
+    const gm  = qd.grossMargin ? (qd.grossMargin*100).toFixed(1)+'%' : '-';
+    const lc  = qd.laborCost ? (qd.laborCost*100).toFixed(1)+'%' : '-';
+    const op  = qd.operatingProfit ? (qd.operatingProfit*100).toFixed(1)+'%' : '-';
+    const ar  = qd.accountsReceivable ? formatMoney(qd.accountsReceivable) : '-';
+    return `<tr>
+      <td style="font-weight:700;color:var(--blue)">${q}</td>
+      <td>${rev}</td><td>${gm}</td><td>${lc}</td><td>${op}</td><td>${ar}</td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="mgmt-wrap">
+    <div class="mgmt-hdr">
+      <div>
+        <div style="font-size:14px;font-weight:800;color:var(--txt1)">📈 경영지표 분기별 입력</div>
+        <div style="font-size:11px;color:var(--txt3);margin-top:2px">입력 후 저장하면 대시보드 전체 KPI에 자동 반영됩니다</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <select class="fc" id="mgmt_quarter" style="padding:6px 10px;font-size:12px;font-weight:700;color:var(--blue)">
+          ${generateQuarterOptions()}
+        </select>
+        <button class="btn btn-p" onclick="loadMgmtData()" style="padding:6px 12px;font-size:12px">불러오기</button>
+      </div>
+    </div>
+
+    <div class="mgmt-list">${fields}</div>
+
+    <div class="mgmt-footer">
+      <button class="btn btn-p" onclick="saveMgmtData()" style="padding:11px 28px;font-size:13px;font-weight:700">
+        💾 저장 · 대시보드 반영
+      </button>
+      <button class="btn" onclick="clearMgmtData()" style="background:#fff8e1;color:#e65100;border:1px solid #ffe082;padding:11px 16px">
+        🗑 이번 분기 초기화
+      </button>
+      <button class="btn btn-csv" onclick="downloadMgmtCSV()" style="padding:11px 14px">
+        ⬇ CSV
+      </button>
+    </div>
+    <div class="dept-inp-saved" id="mgmt_saved" style="display:none">
+      ✅ 저장 완료 · 대시보드에 반영됨
+    </div>
+
+    ${quarters.length > 0 ? `
+    <div style="margin-top:20px">
+      <div style="font-size:12px;font-weight:700;color:var(--txt2);margin-bottom:8px">📅 분기별 이력</div>
+      <div style="overflow-x:auto">
+        <table class="kt" style="width:100%;min-width:500px">
+          <thead><tr>
+            <th>분기</th><th>총매출</th><th>매출이익률</th><th>인건비율</th><th>영업이익률</th><th>미수금잔액</th>
+          </tr></thead>
+          <tbody id="mgmt_hist">${histRows}</tbody>
+        </table>
+      </div>
+    </div>` : ''}
+  </div>`;
+}
+
+function generateQuarterOptions() {
+  const now = new Date();
+  const opts = [];
+  for (let y = now.getFullYear(); y >= now.getFullYear()-2; y--) {
+    for (let q = 4; q >= 1; q--) {
+      const label = `${y}-Q${q}`;
+      const isCurrent = y===now.getFullYear() && q===Math.ceil((now.getMonth()+1)/3);
+      opts.push(`<option value="${label}" ${isCurrent?'selected':''}>${label}${isCurrent?' (현재 분기)':''}</option>`);
+    }
+  }
+  return opts.join('');
+}
+
+function renderMgmtPrev(m, val) {
+  if (!val) return '';
+  let display = '';
+  if (m.type==='money') display = formatMoney(val);
+  else if (m.type==='pct') display = (val*100).toFixed(1)+'%';
+  else display = val + m.unit;
+  return `<span style="font-size:11px;font-weight:700;color:var(--blue)">${display}</span>`;
+}
+
+function previewMgmt(key, type, raw) {
+  const el = document.getElementById('mgprev_'+key);
+  if (!el) return;
+  const v = parseFloat(raw);
+  if (isNaN(v)) { el.innerHTML=''; return; }
+  let actual = v;
+  if (type==='money') actual = v*10000;
+  if (type==='pct')   actual = v/100;
+  const m = MGMT_METRICS.find(x=>x.key===key);
+  if (m) el.innerHTML = renderMgmtPrev(m, actual);
+}
+
+function formatMoney(v) {
+  if (v >= 100000000) return (v/100000000).toFixed(1)+'억';
+  if (v >= 10000) return (v/10000).toFixed(0)+'만원';
+  return v.toLocaleString()+'원';
+}
+
+function loadMgmtData() {
+  const q = document.getElementById('mgmt_quarter')?.value;
+  if (!q) return;
+  const saved = (STATE.mgmtData || {})[q] || {};
+  MGMT_METRICS.forEach(m => {
+    const el = document.getElementById('mginp_'+m.key);
+    if (!el) return;
+    const val = saved[m.key];
+    if (val !== undefined) {
+      if (m.type==='money') el.value = (val/10000).toFixed(0);
+      else if (m.type==='pct') el.value = (val*100).toFixed(1);
+      else el.value = val;
+      const prevEl = document.getElementById('mgprev_'+m.key);
+      if (prevEl) prevEl.innerHTML = renderMgmtPrev(m, val);
+    } else {
+      el.value = '';
+      const prevEl = document.getElementById('mgprev_'+m.key);
+      if (prevEl) prevEl.innerHTML = '';
+    }
+  });
+  showToast('📅 ' + q + ' 데이터를 불러왔습니다');
+}
+
+function saveMgmtData() {
+  const q = document.getElementById('mgmt_quarter')?.value;
+  if (!q) return;
+  if (!STATE.mgmtData) STATE.mgmtData = {};
+  if (!STATE.mgmtData[q]) STATE.mgmtData[q] = {};
+  let count = 0;
+  MGMT_METRICS.forEach(m => {
+    const el = document.getElementById('mginp_'+m.key);
+    if (!el || el.value==='') return;
+    const v = parseFloat(el.value);
+    if (isNaN(v)) return;
+    let actual = v;
+    if (m.type==='money') actual = v*10000;
+    if (m.type==='pct')   actual = v/100;
+    STATE.mgmtData[q][m.key] = actual;
+    count++;
+  });
+  STATE.mgmtData[q].updatedAt = new Date().toISOString();
+  STATE.mgmtData[q].quarter   = q;
+
+  // 최신 분기 데이터를 COMPANY_KPI에 자동 반영
+  applyMgmtToCompanyKpi(q);
+  saveState();
+  syncToFirebase();
+  renderDashboard();
+  renderCompany();
+
+  const savedEl = document.getElementById('mgmt_saved');
+  if (savedEl) { savedEl.style.display='block'; setTimeout(()=>{savedEl.style.display='none';},4000); }
+  showToast('✅ ' + q + ' 경영지표 ' + count + '건 저장 · 대시보드 반영 완료');
+}
+
+function applyMgmtToCompanyKpi(q) {
+  const data = (STATE.mgmtData||{})[q];
+  if (!data) return;
+  const map = {
+    revenue:'총매출', grossMargin:'매출총이익률',
+    laborCost:'인건비율', inventory:'재고회전율'
+  };
+  Object.entries(map).forEach(([key, kpiName]) => {
+    if (data[key] === undefined) return;
+    const kpi = COMPANY_KPI.find(k=>k.item===kpiName);
+    if (kpi) {
+      kpi.prev = kpi.actual;
+      kpi.actual = data[key];
+    }
+  });
+}
+
+function clearMgmtData() {
+  const q = document.getElementById('mgmt_quarter')?.value;
+  if (!q || !confirm(q + ' 데이터를 초기화할까요?')) return;
+  if (STATE.mgmtData) delete STATE.mgmtData[q];
+  MGMT_METRICS.forEach(m => {
+    const el = document.getElementById('mginp_'+m.key);
+    if (el) el.value = '';
+    const prev = document.getElementById('mgprev_'+m.key);
+    if (prev) prev.innerHTML = '';
+  });
+  saveState();
+  showToast('🗑 ' + q + ' 경영지표가 초기화됐습니다');
+}
+
+function downloadMgmtCSV() {
+  const saved = STATE.mgmtData || {};
+  const quarters = Object.keys(saved).sort().reverse();
+  if (!quarters.length) { showToast('저장된 데이터가 없습니다'); return; }
+  const headers = ['분기', ...MGMT_METRICS.map(m=>m.label+'('+m.unit+')')];
+  const rows = [headers.join(',')];
+  quarters.forEach(q => {
+    const d = saved[q];
+    const row = [q, ...MGMT_METRICS.map(m => {
+      const v = d[m.key];
+      if (v===undefined) return '';
+      if (m.type==='money') return (v/10000).toFixed(0);
+      if (m.type==='pct')   return (v*100).toFixed(1);
+      return v;
+    })];
+    rows.push(row.join(','));
+  });
+  const now = new Date();
+  const ds = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const blob = new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=`B2S_경영지표_${ds}.csv`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ────────────────────────────────────────────────────────
+//  부서별 인라인 실적입력 HTML 생성
+// ────────────────────────────────────────────────────────
+function deptInputHTML(deptName, d) {
+  const now = new Date();
+  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const weights = KPI_WEIGHTS[deptName] || {};
+
+  const kpiFields = d.kpi.map((k, i) => {
+    const current = getActual({...k, _deptKey: deptName});
+    const w = weights[k.item];
+    const wBadge = w ? `<span class="weight-badge">${w}%</span>` : '';
+    const catMap = {result:'결과',activity:'활동',convert:'전환'};
+    const catBadge = k.cat ? `<span class="cat cat-${k.cat}">${catMap[k.cat]||k.cat}</span>` : '';
+    const unit = k.isP ? '%' : (k.unit || '');
+    const displayVal = k.isP ? (current*100).toFixed(1) : current;
+    const targetDisplay = k.isP ? (k.target*100).toFixed(1)+'%' : k.target+(k.unit||'');
+
+    return `<div class="dept-inp-row" id="dir_${deptName}_${i}">
+      <div class="dir-left">
+        <div class="dir-no">${k.no}</div>
+        <div class="dir-info">
+          <div class="dir-name">${catBadge} ${wBadge} ${k.item}</div>
+          <div class="dir-target">목표: <strong>${targetDisplay}</strong>${k.comment ? ` · ${k.comment}` : ''}</div>
+        </div>
+      </div>
+      <div class="dir-right">
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" class="dir-inp" id="diinp_${deptName}_${i}"
+            value="${displayVal}" step="any" placeholder="실적"
+            style="width:90px"
+            oninput="previewRate('${deptName}',${i},this.value,${k.isP?1:0},${k.target},${k.low?1:0})">
+          <span class="dir-unit">${unit}</span>
+        </div>
+        <div class="dir-rate" id="dirate_${deptName}_${i}">${previewRateHTML(current, k)}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="dept-input-wrap">
+    <div class="dept-inp-hdr">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--txt1)">✏️ ${deptName} 실적 입력</div>
+        <div style="font-size:11px;color:var(--txt3);margin-top:2px">수정 후 저장하면 전 기기에 즉시 반영됩니다</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="month" class="fc" id="dimonth_${deptName}" value="${defaultMonth}" style="width:130px;padding:5px 8px">
+        <input type="text" class="fc" id="dimgr_${deptName}" placeholder="담당자명" style="width:90px;padding:5px 8px">
+      </div>
+    </div>
+    <div class="dept-inp-list">${kpiFields}</div>
+    <div class="dept-inp-footer">
+      <button class="btn btn-p" onclick="saveDeptInput('${deptName}')" style="padding:10px 24px;font-size:13px">
+        💾 저장 · 동기화
+      </button>
+      <button class="btn" onclick="resetDeptInput('${deptName}')" style="background:#f1f5f9;color:var(--txt2);border:1px solid var(--bdr2)">
+        초기화
+      </button>
+      <button class="btn btn-csv" onclick="downloadCSV('dept','${deptName}')" style="padding:10px 14px">
+        ⬇ CSV
+      </button>
+    </div>
+    <div class="dept-inp-saved" id="disaved_${deptName}" style="display:none">
+      ✅ 저장 완료 — <span id="disaved_time_${deptName}"></span>
+    </div>
+  </div>`;
+}
+
+function previewRateHTML(actual, k) {
+  const r = k.low ? (actual===0?1:Math.min(k.target/actual,1.5)) : actual/k.target;
+  const clr = r>=.9?'var(--green)':r>=.8?'var(--amber)':'var(--red)';
+  const pct = Math.min(r,1)*100;
+  return `<div style="display:flex;align-items:center;gap:5px">
+    <div style="width:50px;height:4px;background:#e8eef4;border-radius:2px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:${clr};border-radius:2px"></div>
+    </div>
+    <span style="font-size:10px;font-weight:700;color:${clr}">${(r*100).toFixed(0)}%</span>
+  </div>`;
+}
+
+function previewRate(deptName, idx, val, isP, target, low) {
+  const el = document.getElementById(`dirate_${deptName}_${idx}`);
+  if (!el) return;
+  const actual = isP ? parseFloat(val)/100 : parseFloat(val);
+  if (isNaN(actual)) return;
+  const fakeK = {target, low: !!low, actual};
+  el.innerHTML = previewRateHTML(actual, fakeK);
+}
+
+function saveDeptInput(deptName) {
+  const d = DEPTS[deptName];
+  if (!d) return;
+  if (!STATE.kpiOverrides) STATE.kpiOverrides = {};
+
+  let savedCount = 0;
+  d.kpi.forEach((k, i) => {
+    const el = document.getElementById(`diinp_${deptName}_${i}`);
+    if (!el || el.value === '') return;
+    let val = parseFloat(el.value);
+    if (isNaN(val)) return;
+    if (k.isP) val = val / 100; // % → decimal
+    STATE.kpiOverrides[`${deptName}__${k.item}`] = val;
+    savedCount++;
+  });
+
+  saveState();
+  renderDeptPage(deptName);
+  renderDashboard();
+  syncToFirebase();
+
+  // Show saved feedback
+  const savedEl = document.getElementById(`disaved_${deptName}`);
+  const timeEl  = document.getElementById(`disaved_time_${deptName}`);
+  if (savedEl && timeEl) {
+    const now = new Date();
+    timeEl.textContent = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')} · ${savedCount}개 KPI 저장됨`;
+    savedEl.style.display = 'block';
+    setTimeout(() => { savedEl.style.display = 'none'; }, 4000);
+  }
+  showToast(`✅ ${deptName} 실적 ${savedCount}건 저장 완료`);
+}
+
+function resetDeptInput(deptName) {
+  const d = DEPTS[deptName];
+  if (!d) return;
+  if (!confirm(`${deptName} 실적을 기본값으로 초기화할까요?`)) return;
+  if (STATE.kpiOverrides) {
+    d.kpi.forEach(k => { delete STATE.kpiOverrides[`${deptName}__${k.item}`]; });
+  }
+  saveState();
+  renderDeptPage(deptName);
+  renderDashboard();
+  showToast(`🔄 ${deptName} 실적이 초기화됐습니다`);
+}
+
 // ────────────────────────────────────────────────────────
 //  RENDER PAGES
 // ────────────────────────────────────────────────────────
@@ -1512,11 +1966,15 @@ function renderDeptPage(deptName) {
           <div class="stab" onclick="switchStab('${safeId}','plan',this)">📋 월간계획</div>
           <div class="stab" onclick="switchStab('${safeId}','weekly',this)">✅ 주간점검</div>
           <div class="stab" onclick="switchStab('${safeId}','issues',this)">🔧 개선기록</div>
+          <div class="stab" onclick="switchStab('${safeId}','input',this)" style="background:#e3f2fd;color:var(--blue);font-weight:700">✏️ 실적입력</div>
+          ${deptName==='회계' && isAdmin() ? '<div class="stab" onclick="switchStab(\'' + safeId + '\',\'mgmt\',this)" style="background:#fff8e1;color:#e65100;font-weight:700">📈 경영지표</div>' : ''}
         </div>
         <div class="stab-content active" id="${safeId}-kpi">${kpiTableHTML(d.kpi, deptName)}</div>
         <div class="stab-content" id="${safeId}-plan">${monthlyPlanHTML(d.monthly)}</div>
         <div class="stab-content" id="${safeId}-weekly">${weeklyActHTML(weeklyData, deptName)}</div>
         <div class="stab-content" id="${safeId}-issues">${issueHTML(d.issues)}</div>
+        <div class="stab-content" id="${safeId}-input">${deptInputHTML(deptName, d)}</div>
+        ${deptName==='회계' && isAdmin() ? '<div class="stab-content" id="' + safeId + '-mgmt">' + mgmtInputHTML() + '</div>' : (deptName==='회계' ? '<div class="stab-content" id="' + safeId + '-mgmt"><div style="text-align:center;padding:40px 20px"><div style="font-size:32px;margin-bottom:12px">🔒</div><div style="font-size:14px;font-weight:700;color:var(--txt2)">관리자 전용 메뉴</div><div style="font-size:12px;color:var(--txt3);margin-top:6px">관리자 계정으로 로그인하면 열람할 수 있습니다</div></div></div>' : '')}
       </div>
     </div>`;
 }
@@ -1548,6 +2006,11 @@ function renderWeekly() {
 }
 
 function renderAll() {
+  // 최신 분기 경영지표 자동 반영
+  if (STATE.mgmtData) {
+    const latestQ = Object.keys(STATE.mgmtData).sort().reverse()[0];
+    if (latestQ) applyMgmtToCompanyKpi(latestQ);
+  }
   try { renderDashboard(); } catch(e) { console.error('renderDashboard error:', e); }
   try { renderCompany(); } catch(e) { console.error('renderCompany error:', e); }
   try { renderKpiMaster(); } catch(e) { console.error('renderKpiMaster error:', e); }
