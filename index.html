@@ -2127,7 +2127,7 @@ function saveDailyData(dept, dateStr, data) {
 
 // 일일 데이터 → KPI 자동 누적 반영
 function applyDailyToKpi(dept) {
-  if (!STATE.dailyLogs || !DAILY_TASKS[dept]) return;
+  if (!STATE.dailyLogs || !DAILY_TASKS[dept] || !DEPTS[dept]) return;
   const tasks  = DAILY_TASKS[dept];
   const prefix = `daily_${dept}_`;
   const logs   = Object.entries(STATE.dailyLogs)
@@ -2218,6 +2218,7 @@ function teamDailyStatusHTML(deptName, dateStr) {
 function dailyPageHTML(deptName) {
   const tasks = DAILY_TASKS[deptName];
   if (!tasks) return '<div style="padding:20px;text-align:center;color:var(--txt3)">일일 업무가 설정되지 않은 부서입니다</div>';
+  if (!DEPTS[deptName]) return '<div style="padding:20px;text-align:center;color:var(--txt3)">부서 데이터를 찾을 수 없습니다</div>';
 
   const today = new Date().toISOString().slice(0,10);
   const saved = loadDailyData(deptName, today);
@@ -2393,8 +2394,8 @@ function manualSaveDaily(dept) {
   const dateEl = document.getElementById(`dailyDate_${dept}`);
   const dateStr = dateEl?.value || new Date().toISOString().slice(0,10);
   autoSaveDaily(dept, dateStr);
-  renderDeptPage(dept);
-  renderDashboard();
+  try { renderDeptPage(dept); } catch(e) { console.error('renderDeptPage error:', e); }
+  try { renderDashboard(); } catch(e) {}
   const savedEl = document.getElementById(`daily_saved_${dept}`);
   if (savedEl) { savedEl.style.display='block'; setTimeout(()=>savedEl.style.display='none', 3000); }
   showToast('✅ 일일 업무 저장 · KPI 반영 완료');
@@ -2411,7 +2412,7 @@ function changeDailyDate(dept, dateStr) {
   });
   const memoEl = document.getElementById(`dm_${dept}_memo`);
   if (memoEl) memoEl.value = data.memo || '';
-  renderDeptPage(dept);
+  try { renderDeptPage(dept); } catch(e) {}
 }
 
 function viewDailyHistory(dept) {
@@ -2493,6 +2494,7 @@ function renderAdminDailyTable() {
 // ── CSV 다운로드 ──
 function adminDownload(type) {
   if (!isAdmin()) { showToast('⚠️ 관리자만 다운로드 가능합니다'); return; }
+  if (!STATE) { showToast('⚠️ 데이터가 없습니다'); return; }
   const now = new Date();
   const ds  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
 
@@ -2555,7 +2557,12 @@ function adminDownload(type) {
 // ── 자동 백업 ──
 function toggleAutoBackup(enabled) {
   localStorage.setItem('autoBackupEnabled', enabled ? '1' : '0');
-  showToast(enabled ? '⏰ 자동 백업 활성화' : '자동 백업 비활성화');
+  if (!enabled && window._autoBackupInterval) {
+    clearInterval(window._autoBackupInterval);
+    window._autoBackupInterval = null;
+  }
+  if (enabled) checkAutoBackup();
+  showToast(enabled ? '⏰ 자동 백업 활성화' : '🔕 자동 백업 비활성화');
 }
 
 function checkAutoBackup() {
@@ -2572,10 +2579,15 @@ function checkAutoBackup() {
   const remaining = INTERVAL_MS - (now - lastTime);
 
   if (remaining <= 0) {
-    // 1시간 이상 경과 → 즉시 백업
+    // 1시간 이상 경과 → 즉시 백업 후 반복 예약
     setTimeout(() => {
       adminDownload('full_backup');
       showToast('⏰ 자동 백업 완료 (1시간 주기)');
+      if (window._autoBackupInterval) clearInterval(window._autoBackupInterval);
+      window._autoBackupInterval = setInterval(() => {
+        adminDownload('full_backup');
+        showToast('⏰ 정기 자동 백업 완료');
+      }, INTERVAL_MS);
     }, 2000);
   } else {
     // 남은 시간 후 백업 예약
@@ -2583,7 +2595,8 @@ function checkAutoBackup() {
       adminDownload('full_backup');
       showToast('⏰ 자동 백업 완료 (1시간 주기)');
       // 이후 계속 1시간마다 반복
-      setInterval(() => {
+      if (window._autoBackupInterval) clearInterval(window._autoBackupInterval);
+      window._autoBackupInterval = setInterval(() => {
         adminDownload('full_backup');
         showToast('⏰ 정기 자동 백업 완료');
       }, INTERVAL_MS);
@@ -2965,8 +2978,10 @@ function renderAll() {
     try { renderDeptPage(name); } catch(e) { console.error('renderDeptPage error for', name, e); }
   });
   try { renderWeekly(); } catch(e) { console.error('renderWeekly error:', e); }
-  // 권한 UI 적용
-  setTimeout(() => { if(window._currentUser !== undefined) applyRoleUI(); }, 100);
+  // 권한 UI 적용 (로그인 상태일 때만)
+  setTimeout(() => {
+    if (window._currentUser && window._currentUser.uid) applyRoleUI();
+  }, 100);
 }
 
 // ────────────────────────────────────────────────────────
