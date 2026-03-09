@@ -1472,6 +1472,7 @@ onAuthStateChanged(auth, async (user) => {
 </script>
 <script>
 
+
 const DEPT_OWNERS = {
   '회계':     '정보라',
   '무역1':    '카므란',
@@ -3717,22 +3718,7 @@ function setPeriod(p, el) {
   el.classList.add('active');
 }
 
-// Input page
-const deptSelectEl = document.getElementById('deptSelect');
-if (deptSelectEl) deptSelectEl.addEventListener('change', function() {
-  const deptName = this.value;
-  // Map display name to dept key
-  const key = deptName.includes('(카므란)') ? '무역1' : deptName.includes('(이리)') ? '무역2' : deptName;
-  const d = DEPTS[key] || DEPTS[deptName];
-  const c = document.getElementById('kpiInputFields');
-  if (!c) return;
-  if (!d) { c.innerHTML = ''; return; }
-  c.innerHTML = d.kpi.map((k,i)=>`
-    <div class="fg">
-      <label class="fl">${k.no}. ${k.item} <span style="color:var(--txt3)">(목표: ${ft(k)})</span></label>
-      <input type="number" class="fc" id="inp_${i}" placeholder="실적 입력" step="any" value="${getActual(k)}">
-    </div>`).join('');
-});
+
 
 // Set default month
 (function() {
@@ -4069,6 +4055,7 @@ if (document.readyState === 'loading') {
 } else {
   setTimeout(doInit, 50);
 }
+
 
 </script>
 </body>
