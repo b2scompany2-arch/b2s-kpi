@@ -1322,8 +1322,7 @@ html,body{height:100%;font-family:'Noto Sans KR',-apple-system,sans-serif;backgr
 <div class="toast" id="toast"></div>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"
-><\/script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script>
 const firebaseConfig = {
@@ -1397,6 +1396,8 @@ _fbAuth.onAuthStateChanged(function(user) {
 });
 </script>
 <script>
+
+
 
 
 
@@ -1853,19 +1854,28 @@ function normalizeDeptData(d) {
   };
 }
 function normalizeAllDepts() {
-  if (!STATE.depts) STATE.depts = {};
+  // STATE 루트 안전 초기화
+  if (!STATE)                     { console.error('[INIT] STATE 없음'); return; }
+  if (typeof STATE !== 'object')  return;
+  if (!STATE.depts)               STATE.depts = {};
+  if (!STATE.kpiOverrides)        STATE.kpiOverrides = {};
+  if (!STATE.dailyLogs)           STATE.dailyLogs = {};
+
+  var changed = false;
   Object.keys(DEPTS).forEach(function(name) {
-    if (!STATE.depts[name]) STATE.depts[name] = {};
+    if (!STATE.depts[name]) { STATE.depts[name] = {}; changed = true; }
     var d = STATE.depts[name];
-    if (!Array.isArray(d.monthly))   d.monthly   = [];
-    if (!Array.isArray(d.weekly))    d.weekly    = [];
-    if (!Array.isArray(d.issues))    d.issues    = [];
-    if (!Array.isArray(d.checklist)) d.checklist = [];
-    if (!Array.isArray(d.metrics))   d.metrics   = [];
+    var keys = ['monthly','weekly','issues','checklist','metrics'];
+    keys.forEach(function(k) {
+      if (!Array.isArray(d[k])) { d[k] = []; changed = true; }
+    });
     console.log('[INIT] dept normalized:', name);
   });
-  // 5-7: 보정 후 즉시 저장
-  try { saveState(); } catch(e) { console.warn('[INIT] saveState failed:', e); }
+
+  // 변경이 있을 때만 저장 (불필요한 I/O 방지)
+  if (changed) {
+    try { saveState(); } catch(e) { console.warn('[INIT] saveState failed:', e); }
+  }
 }
 
 function saveState() {
@@ -3181,9 +3191,11 @@ function clearDeptActionForm(safeId) {
 function previewRate(deptName, idx, val, isP, target, low) {
   const el = document.getElementById(`dirate_${deptName}_${idx}`);
   if (!el) return;
-  const actual = isP ? parseFloat(val)/100 : parseFloat(val);
-  if (isNaN(actual)) return;
-  const fakeK = {target, low: !!low, actual};
+  if (val === '' || val === null || val === undefined) { el.innerHTML = ''; return; }
+  // isP: 입력값은 백분율(예:90), 저장/계산은 소수점(예:0.9)
+  const actual = isP ? parseFloat(val) / 100 : parseFloat(val);
+  if (isNaN(actual) || actual < 0) { el.innerHTML = ''; return; }
+  const fakeK = { target: parseFloat(target) || 0, low: !!low, actual };
   el.innerHTML = previewRateHTML(actual, fakeK);
 }
 
@@ -4828,7 +4840,8 @@ function toggleDeptAction(deptKey, i) {
   act.done = !wasDone;
 
   // ── 연결 KPI 실적 합산/취소 ──────────────────────────────────
-  if (act.kpi) {
+  // 일일업무 활성 부서는 applyDailyToKpi()가 담당 → 중복 합산 방지
+  if (act.kpi && !DAILY_TASKS[deptKey]) {
     if (!STATE.kpiOverrides) STATE.kpiOverrides = {};
     var kpiKey = deptKey + '__' + act.kpi;
     var d      = DEPTS[deptKey];
@@ -5124,17 +5137,27 @@ function isInstalled() {
 function showPwaOverlay() {
   const overlay = document.getElementById('pwaOverlay');
   if (!overlay) return;
-  // iOS vs Android/Desktop 분기
-  if (isIos) {
-    document.getElementById('pwaInstallAuto').style.display = 'none';
-    document.getElementById('pwaInstallIos').style.display  = 'block';
-  } else {
-    document.getElementById('pwaInstallAuto').style.display = 'block';
-    document.getElementById('pwaInstallIos').style.display  = 'none';
-  }
-  overlay.classList.add('show');
-  // 이번 세션에서 팝업 봤다고 기록 (탭 닫으면 초기화)
-  try { sessionStorage.setItem(PWA_SESSION_KEY, '1'); } catch(e) {}
+  // 세션 내 중복 노출 방지
+  try { if (sessionStorage.getItem(PWA_SESSION_KEY) === '1') return; } catch(e) {}
+  // PWA 이미 설치됐으면 표시 안 함
+  if (isInstalled()) return;
+  // 탭 클릭 방해 방지: DOM 완전 로드 후 3.5초 지연
+  setTimeout(function() {
+    // 팝업 표시 직전 재확인
+    try { if (sessionStorage.getItem(PWA_SESSION_KEY) === '1') return; } catch(e) {}
+    if (isInstalled()) return;
+    // iOS vs Android/Desktop 분기
+    if (isIos) {
+      document.getElementById('pwaInstallAuto').style.display = 'none';
+      document.getElementById('pwaInstallIos').style.display  = 'block';
+    } else {
+      document.getElementById('pwaInstallAuto').style.display = 'block';
+      document.getElementById('pwaInstallIos').style.display  = 'none';
+    }
+    overlay.classList.add('show');
+    // 세션 기록
+    try { sessionStorage.setItem(PWA_SESSION_KEY, '1'); } catch(e) {}
+  }, 3500);
 }
 
 function closePwaOverlay(confirmed) {
@@ -5251,6 +5274,8 @@ if (document.readyState === 'loading') {
 } else {
   setTimeout(doInit, 50);
 }
+
+
 
 
 
